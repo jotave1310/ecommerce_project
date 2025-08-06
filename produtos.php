@@ -13,7 +13,7 @@ if (!isset($_SESSION['cart'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Project - Loja Online</title>
+    <title>Produtos - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -38,27 +38,24 @@ if (!isset($_SESSION['cart'])) {
 
     <main>
         <div class="container">
-            <section class="hero">
-                <h1>Bem-vindo à nossa Loja Online</h1>
-                <p>Encontre os melhores produtos com os melhores preços!</p>
-            </section>
+            <h1 style="color: #2c3e50; margin-bottom: 2rem;">Todos os Produtos</h1>
 
-            <section class="produtos-destaque">
-                <h2>Produtos em Destaque</h2>
-                <div class="products-grid">
-                    <?php foreach ($produtos as $produto): ?>
-                        <div class="product-card">
-                            <div class="product-image">
-                                Imagem do Produto
-                            </div>
-                            <div class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></div>
-                            <div class="product-price"><?php echo formatarPreco($produto['preco']); ?></div>
-                            <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                            <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
+            <div class="products-grid">
+                <?php foreach ($produtos as $produto): ?>
+                    <div class="product-card">
+                        <div class="product-image">
+                            Imagem do Produto
                         </div>
-                    <?php endforeach; ?>
-                </div>
-            </section>
+                        <div class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></div>
+                        <div style="background-color: #ecf0f1; padding: 0.3rem; border-radius: 3px; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            <?php echo htmlspecialchars($produto['categoria']); ?>
+                        </div>
+                        <div class="product-price"><?php echo formatarPreco($produto['preco']); ?></div>
+                        <p style="margin-bottom: 1rem;"><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                        <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </main>
 
