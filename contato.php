@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
         </div>
     </footer>
 </body>

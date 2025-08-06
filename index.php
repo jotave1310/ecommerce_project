@@ -43,28 +43,29 @@ if (!isset($_SESSION['cart'])) {
                 <p>Encontre os melhores produtos com os melhores preços!</p>
             </section>
 
-            <section class="produtos-destaque">
-                <h2>Produtos em Destaque</h2>
-                <div class="products-grid">
-                    <?php foreach ($produtos as $produto): ?>
-                        <div class="product-card">
-                            <div class="product-image">
-                                Imagem do Produto
-                            </div>
-                            <div class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></div>
-                            <div class="product-price"><?php echo formatarPreco($produto['preco']); ?></div>
-                            <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                            <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
-                        </div>
-                    <?php endforeach; ?>
+        <?php
+        // Obter produtos em destaque do banco de dados
+        $produtosDestaque = obterProdutosDestaque(4);
+        
+        foreach ($produtosDestaque as $produto): ?>
+            <div class="produto">
+                <div class="produto-imagem">
+                    <div class="placeholder-imagem">Imagem do Produto</div>
                 </div>
+                <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
+                <p class="categoria"><?php echo htmlspecialchars($produto['categoria']); ?></p>
+                <p class="preco"><?php echo formatarPreco($produto['preco']); ?></p>
+                <p class="descricao"><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
+            </div>
+        <?php endforeach; ?>
             </section>
         </div>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
         </div>
     </footer>
 </body>

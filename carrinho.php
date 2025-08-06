@@ -152,7 +152,7 @@ $total = calcularTotalCarrinho($_SESSION['cart']);
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
         </div>
     </footer>
 </body>

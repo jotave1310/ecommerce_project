@@ -3,38 +3,28 @@ session_start();
 require_once 'config.php';
 
 // Inicializar carrinho se não existir
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = array();
-}
-
-// Redirecionar se o carrinho estiver vazio
-if (empty($_SESSION['cart'])) {
-    header('Location: carrinho.php');
-    exit;
-}
-
-$total = calcularTotalCarrinho($_SESSION['cart']);
-
-// Processar finalização da compra
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_compra'])) {
-    // Validar dados do formulário
-    $nome = trim($_POST['nome'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $telefone = trim($_POST['telefone'] ?? '');
-    $endereco = trim($_POST['endereco'] ?? '');
-    $cidade = trim($_POST['cidade'] ?? '');
-    $cep = trim($_POST['cep'] ?? '');
-    
-    $erros = [];
-    
-    if (empty($nome)) $erros[] = "Nome é obrigatório";
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $erros[] = "Email válido é obrigatório";
-    if (empty($telefone)) $erros[] = "Telefone é obrigatório";
-    if (empty($endereco)) $erros[] = "Endereço é obrigatório";
-    if (empty($cidade)) $erros[] = "Cidade é obrigatória";
-    if (empty($cep)) $erros[] = "CEP é obrigatório";
-    
-    if (empty($erros)) {
+if (!isset($_SESSION['cart'])        // Processar dados do formulário
+        $dadosCliente = [
+            'nome' => trim($_POST['nome'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'telefone' => trim($_POST['telefone'] ?? ''),
+            'endereco' => trim($_POST['endereco'] ?? ''),
+            'cidade' => trim($_POST['cidade'] ?? ''),
+            'cep' => trim($_POST['cep'] ?? '')
+        ];
+        
+        // Validar dados
+        $erros = [];
+        if (empty($dadosCliente['nome'])) $erros[] = "Nome é obrigatório";
+        if (empty($dadosCliente['email']) || !filter_var($dadosCliente['email'], FILTER_VALIDATE_EMAIL)) {
+            $erros[] = "Email válido é obrigatório";
+        }
+        if (empty($dadosCliente['telefone'])) $erros[] = "Telefone é obrigatório";
+        if (empty($dadosCliente['endereco'])) $erros[] = "Endereço é obrigatório";
+        if (empty($dadosCliente['cidade'])) $erros[] = "Cidade é obrigatória";
+        if (empty($dadosCliente['cep'])) $erros[] = "CEP é obrigatório";
+        
+        if (empty($erros)) {
             // Calcular total
             $total = calcularTotalCarrinho($_SESSION['cart']);
             
@@ -52,8 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_compra'])) 
             } else {
                 $mensagem = "Erro ao processar pedido. Tente novamente.";
             }
-    }
-}
+        }
 ?>
 
 <!DOCTYPE html>
@@ -193,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_compra'])) 
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
         </div>
     </footer>
 </body>

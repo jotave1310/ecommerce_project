@@ -41,17 +41,19 @@ if (!isset($_SESSION['cart'])) {
             <h1 style="color: #2c3e50; margin-bottom: 2rem;">Todos os Produtos</h1>
 
             <div class="products-grid">
-                <?php foreach ($produtos as $produto): ?>
-                    <div class="product-card">
-                        <div class="product-image">
-                            Imagem do Produto
+                <?php
+                // Obter todos os produtos do banco de dados
+                $todosProdutos = obterTodosProdutos();
+                
+                foreach ($todosProdutos as $produto): ?>
+                    <div class="produto">
+                        <div class="produto-imagem">
+                            <div class="placeholder-imagem">Imagem do Produto</div>
                         </div>
-                        <div class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></div>
-                        <div style="background-color: #ecf0f1; padding: 0.3rem; border-radius: 3px; margin-bottom: 0.5rem; font-size: 0.9rem;">
-                            <?php echo htmlspecialchars($produto['categoria']); ?>
-                        </div>
-                        <div class="product-price"><?php echo formatarPreco($produto['preco']); ?></div>
-                        <p style="margin-bottom: 1rem;"><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                        <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
+                        <p class="categoria"><?php echo htmlspecialchars($produto['categoria']); ?></p>
+                        <p class="preco"><?php echo formatarPreco($produto['preco']); ?></p>
+                        <p class="descricao"><?php echo htmlspecialchars($produto['descricao']); ?></p>
                         <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
                     </div>
                 <?php endforeach; ?>
@@ -61,7 +63,7 @@ if (!isset($_SESSION['cart'])) {
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
         </div>
     </footer>
 </body>
