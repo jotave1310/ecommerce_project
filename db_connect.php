@@ -1,52 +1,16 @@
 <?php
-/**
- * Arquivo de conexão com o banco de dados MySQL
- * E-commerce Project - Versão Corrigida
- */
-
 // Configurações do banco de dados
-$db_host = 'localhost';
-$db_name = 'ecommerce_db';
-$db_user = 'ecommerce_user';
-$db_pass = 'password';
+$host = 'localhost';
+$dbname = 'ecommerce_db';
+$username = 'ecommerce_user';
+$password = 'ecommerce_pass';
 
 try {
-    // Criar conexão PDO
-    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass);
-    
-    // Configurar PDO para lançar exceções em caso de erro
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Configurar PDO para retornar arrays associativos
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    
 } catch (PDOException $e) {
-    die("Erro na conexão com o banco de dados: " . $e->getMessage());
-}
-
-/**
- * Função para obter um produto pelo ID
- */
-function obterProduto($id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("SELECT p.*, c.nome as categoria_nome FROM produtos p 
-                              LEFT JOIN categorias c ON p.categoria_id = c.id 
-                              WHERE p.id = ?");
-        $stmt->execute([$id]);
-        $produto = $stmt->fetch();
-        
-        if ($produto) {
-            // Manter compatibilidade com o código existente
-            $produto['categoria'] = $produto['categoria_nome'];
-        }
-        
-        return $produto;
-    } catch (PDOException $e) {
-        error_log("Erro ao obter produto: " . $e->getMessage());
-        return null;
-    }
+    die("Erro na conexão: " . $e->getMessage());
 }
 
 /**
@@ -56,18 +20,16 @@ function obterTodosProdutos() {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("SELECT p.*, c.nome as categoria_nome FROM produtos p 
-                              LEFT JOIN categorias c ON p.categoria_id = c.id 
-                              ORDER BY p.id");
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.nome as categoria_nome 
+            FROM produtos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.ativo = 1 
+            ORDER BY p.nome
+        ");
         $stmt->execute();
-        $produtos = $stmt->fetchAll();
+        return $stmt->fetchAll();
         
-        // Manter compatibilidade com o código existente
-        foreach ($produtos as &$produto) {
-            $produto['categoria'] = $produto['categoria_nome'];
-        }
-        
-        return $produtos;
     } catch (PDOException $e) {
         error_log("Erro ao obter produtos: " . $e->getMessage());
         return [];
@@ -75,25 +37,23 @@ function obterTodosProdutos() {
 }
 
 /**
- * Função para obter produtos em destaque (primeiros 4)
+ * Função para obter produtos em destaque
  */
-function obterProdutosDestaque($limite = 4) {
+function obterProdutosDestaque($limite = 6) {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("SELECT p.*, c.nome as categoria_nome FROM produtos p 
-                              LEFT JOIN categorias c ON p.categoria_id = c.id 
-                              ORDER BY p.id LIMIT :limite");
-        $stmt->bindValue(':limite', (int)$limite, PDO::PARAM_INT);
-        $stmt->execute();
-        $produtos = $stmt->fetchAll();
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.nome as categoria_nome 
+            FROM produtos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.ativo = 1 AND p.destaque = 1 
+            ORDER BY p.data_criacao DESC 
+            LIMIT ?
+        ");
+        $stmt->execute([$limite]);
+        return $stmt->fetchAll();
         
-        // Manter compatibilidade com o código existente
-        foreach ($produtos as &$produto) {
-            $produto['categoria'] = $produto['categoria_nome'];
-        }
-        
-        return $produtos;
     } catch (PDOException $e) {
         error_log("Erro ao obter produtos em destaque: " . $e->getMessage());
         return [];
@@ -101,96 +61,38 @@ function obterProdutosDestaque($limite = 4) {
 }
 
 /**
- * Função para calcular o total do carrinho
+ * Função para obter produto por ID
  */
-function calcularTotalCarrinho($carrinho) {
-    global $pdo;
-    $total = 0;
-    
-    if (empty($carrinho)) {
-        return $total;
-    }
-    
-    try {
-        $ids = array_keys($carrinho);
-        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
-        
-        $stmt = $pdo->prepare("SELECT id, preco FROM produtos WHERE id IN ($placeholders)");
-        $stmt->execute($ids);
-        $produtos = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        
-        foreach ($carrinho as $produtoId => $quantidade) {
-            if (isset($produtos[$produtoId])) {
-                $total += $produtos[$produtoId] * $quantidade;
-            }
-        }
-        
-        return $total;
-    } catch (PDOException $e) {
-        error_log("Erro ao calcular total do carrinho: " . $e->getMessage());
-        return 0;
-    }
-}
-
-/**
- * Função para formatar preço (mantida para compatibilidade)
- */
-function formatarPreco($preco) {
-    return 'R$ ' . number_format($preco, 2, ',', '.');
-}
-
-/**
- * Função para salvar pedido no banco de dados
- */
-function salvarPedido($dadosCliente, $carrinho, $total) {
+function obterProdutoPorId($id) {
     global $pdo;
     
     try {
-        $pdo->beginTransaction();
-        
-        // Inserir pedido
-        $stmt = $pdo->prepare("INSERT INTO pedidos (usuario_id, status, total, endereco_entrega, cidade_entrega, cep_entrega) 
-                              VALUES (NULL, 'Pendente', ?, ?, ?, ?)");
-        $stmt->execute([
-            $total,
-            $dadosCliente["endereco"] ?? null,
-            $dadosCliente["cidade"] ?? null,
-            $dadosCliente["cep"] ?? null
-        ]);
-        
-        $pedidoId = $pdo->lastInsertId();
-        
-        // Inserir itens do pedido
-        $stmt = $pdo->prepare("INSERT INTO itens_pedido (pedido_id, produto_id, quantidade, preco_unitario) 
-                              VALUES (?, ?, ?, ?)");
-        
-        foreach ($carrinho as $produtoId => $quantidade) {
-            $produto = obterProduto($produtoId);
-            if ($produto) {
-                $stmt->execute([$pedidoId, $produtoId, $quantidade, $produto['preco']]);
-            }
-        }
-        
-        $pdo->commit();
-        return $pedidoId;
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.nome as categoria_nome 
+            FROM produtos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.id = ? AND p.ativo = 1
+        ");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
         
     } catch (PDOException $e) {
-        $pdo->rollBack();
-        error_log("Erro ao salvar pedido: " . $e->getMessage());
+        error_log("Erro ao obter produto: " . $e->getMessage());
         return false;
     }
 }
 
 /**
- * Função para obter todas as categorias
+ * Função para obter categorias
  */
 function obterCategorias() {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("SELECT * FROM categorias ORDER BY nome");
+        $stmt = $pdo->prepare("SELECT * FROM categorias WHERE ativo = 1 ORDER BY nome");
         $stmt->execute();
         return $stmt->fetchAll();
+        
     } catch (PDOException $e) {
         error_log("Erro ao obter categorias: " . $e->getMessage());
         return [];
@@ -198,35 +100,116 @@ function obterCategorias() {
 }
 
 /**
- * Função para adicionar um novo produto
+ * Função para adicionar produto
  */
-function adicionarProduto($nome, $categoria, $preco, $descricao) {
+function adicionarProduto($nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = '', $especificacoes_json = '', $destaque = 0) {
     global $pdo;
     
     try {
-        // Verificar se a categoria existe, se não, criar
-        $stmt = $pdo->prepare("SELECT id FROM categorias WHERE nome = ?");
-        $stmt->execute([$categoria]);
-        $categoriaExistente = $stmt->fetch();
-        
-        if (!$categoriaExistente) {
-            // Criar nova categoria
-            $stmt = $pdo->prepare("INSERT INTO categorias (nome, descricao) VALUES (?, ?)");
-            $stmt->execute([$categoria, "Categoria: " . $categoria]);
-            $categoriaId = $pdo->lastInsertId();
-        } else {
-            $categoriaId = $categoriaExistente['id'];
-        }
-        
-        // Inserir o produto
-        $stmt = $pdo->prepare("INSERT INTO produtos (nome, categoria_id, preco, descricao, estoque, ativo) 
-                              VALUES (?, ?, ?, ?, 100, 1)");
-        $stmt->execute([$nome, $categoriaId, $preco, $descricao]);
-        
-        return true;
+        $stmt = $pdo->prepare("
+            INSERT INTO produtos (nome, descricao_curta, descricao_longa, preco, categoria_id, estoque, imagem_url, especificacoes_json, destaque, ativo, data_criacao) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+        ");
+        $stmt->execute([$nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url, $especificacoes_json, $destaque]);
+        return $pdo->lastInsertId();
         
     } catch (PDOException $e) {
         error_log("Erro ao adicionar produto: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para obter produtos relacionados
+ */
+function obterProdutosRelacionados($categoria_id, $produto_id_excluir, $limite = 4) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.nome as categoria_nome 
+            FROM produtos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.categoria_id = ? AND p.id != ? AND p.ativo = 1 
+            ORDER BY RAND() 
+            LIMIT ?
+        ");
+        $stmt->execute([$categoria_id, $produto_id_excluir, $limite]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter produtos relacionados: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para obter avaliações de um produto
+ */
+function obterAvaliacoesProduto($produto_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT a.*, u.nome as usuario_nome 
+            FROM avaliacoes a 
+            LEFT JOIN usuarios u ON a.usuario_id = u.id 
+            WHERE a.produto_id = ? AND a.ativo = 1 
+            ORDER BY a.data_avaliacao DESC
+        ");
+        $stmt->execute([$produto_id]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter avaliações: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para adicionar avaliação
+ */
+function adicionarAvaliacao($produto_id, $usuario_id, $nota, $comentario) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO avaliacoes (produto_id, usuario_id, nota, comentario, ativo, data_avaliacao) 
+            VALUES (?, ?, ?, ?, 1, NOW())
+        ");
+        $stmt->execute([$produto_id, $usuario_id, $nota, $comentario]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao adicionar avaliação: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para registrar usuário
+ */
+function registrarUsuario($nome, $email, $senha, $telefone = '', $endereco = '', $cidade = '', $cep = '') {
+    global $pdo;
+    
+    try {
+        // Verificar se email já existe
+        $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            return false; // Email já existe
+        }
+        
+        $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("
+            INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, cep, tipo_usuario, ativo, data_registro) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'cliente', 1, NOW())
+        ");
+        $stmt->execute([$nome, $email, $senhaHash, $telefone, $endereco, $cidade, $cep]);
+        return $pdo->lastInsertId();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao registrar usuário: " . $e->getMessage());
         return false;
     }
 }
@@ -243,6 +226,10 @@ function autenticarUsuario($email, $senha) {
         $usuario = $stmt->fetch();
         
         if ($usuario && password_verify($senha, $usuario['senha'])) {
+            // Atualizar último login
+            $stmt = $pdo->prepare("UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?");
+            $stmt->execute([$usuario['id']]);
+            
             return $usuario;
         }
         
@@ -255,71 +242,14 @@ function autenticarUsuario($email, $senha) {
 }
 
 /**
- * Função para criar novo usuário
+ * Função para obter usuário por ID
  */
-function criarUsuario($nome, $email, $senha, $telefone = null) {
+function obterUsuarioPorId($id) {
     global $pdo;
     
     try {
-        $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
-        
-        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, telefone, data_registro) 
-                              VALUES (?, ?, ?, ?, NOW())");
-        $stmt->execute([$nome, $email, $senhaHash, $telefone]);
-        
-        return $pdo->lastInsertId();
-        
-    } catch (PDOException $e) {
-        error_log("Erro ao criar usuário: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Função para verificar se email já existe
- */
-function verificarEmailExiste($email) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-        $stmt->execute([$email]);
-        return $stmt->fetch() !== false;
-        
-    } catch (PDOException $e) {
-        error_log("Erro ao verificar email: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Função para atualizar último login
- */
-function atualizarUltimoLogin($usuarioId) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?");
-        $stmt->execute([$usuarioId]);
-        return true;
-        
-    } catch (PDOException $e) {
-        error_log("Erro ao atualizar último login: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Função para obter dados do usuário
- */
-function obterUsuario($usuarioId) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("SELECT id, nome, email, telefone, endereco, cidade, cep, 
-                              data_registro, ultimo_login, tipo_usuario 
-                              FROM usuarios WHERE id = ? AND ativo = 1");
-        $stmt->execute([$usuarioId]);
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = ? AND ativo = 1");
+        $stmt->execute([$id]);
         return $stmt->fetch();
         
     } catch (PDOException $e) {
@@ -495,6 +425,141 @@ function obterPedidosUsuario($usuarioId, $limite = 20) {
         
     } catch (PDOException $e) {
         error_log("Erro ao obter pedidos do usuário: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para obter estatísticas de produtos (admin)
+ */
+function obterEstatisticasProdutos() {
+    global $pdo;
+    
+    try {
+        $stats = [];
+        
+        // Total de produtos
+        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM produtos WHERE ativo = 1");
+        $stmt->execute();
+        $stats['total_produtos'] = $stmt->fetch()['total'];
+        
+        // Valor total do estoque
+        $stmt = $pdo->prepare("SELECT SUM(preco * estoque) as valor_total FROM produtos WHERE ativo = 1");
+        $stmt->execute();
+        $stats['valor_total_estoque'] = $stmt->fetch()['valor_total'] ?? 0;
+        
+        // Produtos em destaque
+        $stmt = $pdo->prepare("SELECT COUNT(*) as destaque FROM produtos WHERE ativo = 1 AND destaque = 1");
+        $stmt->execute();
+        $stats['produtos_destaque'] = $stmt->fetch()['destaque'];
+        
+        // Produtos com estoque baixo (menos de 10)
+        $stmt = $pdo->prepare("SELECT COUNT(*) as baixo_estoque FROM produtos WHERE ativo = 1 AND estoque < 10");
+        $stmt->execute();
+        $stats['produtos_baixo_estoque'] = $stmt->fetch()['baixo_estoque'];
+        
+        return $stats;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter estatísticas de produtos: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para atualizar produto
+ */
+function atualizarProduto($id, $nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = '', $especificacoes_json = '', $destaque = 0) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE produtos 
+            SET nome = ?, descricao_curta = ?, descricao_longa = ?, preco = ?, categoria_id = ?, 
+                estoque = ?, imagem_url = ?, especificacoes_json = ?, destaque = ?, data_atualizacao = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url, $especificacoes_json, $destaque, $id]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao atualizar produto: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para remover produto (desativar)
+ */
+function removerProduto($id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE produtos SET ativo = 0 WHERE id = ?");
+        $stmt->execute([$id]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao remover produto: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para adicionar categoria
+ */
+function adicionarCategoria($nome, $descricao = '') {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO categorias (nome, descricao, ativo, data_criacao) VALUES (?, ?, 1, NOW())");
+        $stmt->execute([$nome, $descricao]);
+        return $pdo->lastInsertId();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao adicionar categoria: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para buscar produtos
+ */
+function buscarProdutos($termo, $categoria_id = null, $preco_min = null, $preco_max = null) {
+    global $pdo;
+    
+    try {
+        $sql = "
+            SELECT p.*, c.nome as categoria_nome 
+            FROM produtos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.ativo = 1 AND (p.nome LIKE ? OR p.descricao_curta LIKE ? OR p.descricao_longa LIKE ?)
+        ";
+        $params = ["%$termo%", "%$termo%", "%$termo%"];
+        
+        if ($categoria_id) {
+            $sql .= " AND p.categoria_id = ?";
+            $params[] = $categoria_id;
+        }
+        
+        if ($preco_min !== null) {
+            $sql .= " AND p.preco >= ?";
+            $params[] = $preco_min;
+        }
+        
+        if ($preco_max !== null) {
+            $sql .= " AND p.preco <= ?";
+            $params[] = $preco_max;
+        }
+        
+        $sql .= " ORDER BY p.nome";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao buscar produtos: " . $e->getMessage());
         return [];
     }
 }

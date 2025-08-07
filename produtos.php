@@ -1,122 +1,17 @@
 <?php
 session_start();
+require_once 'db_connect.php'; // Incluir o arquivo de conexão com o banco de dados
 
 // Inicializar carrinho se não existir
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = array();
 }
 
-// Produtos de exemplo (simulando banco de dados)
-$produtos = [
-    [
-        'id' => 1,
-        'nome' => 'Smartphone Samsung Galaxy S24 Ultra',
-        'categoria' => 'Eletrônicos',
-        'preco' => 899.99,
-        'descricao' => 'Smartphone premium com tela Dynamic AMOLED de 6.8 polegadas, câmera de 200MP e S Pen integrada.',
-        'estoque' => 15,
-        'destaque' => true
-    ],
-    [
-        'id' => 2,
-        'nome' => 'Notebook Dell Inspiron 15 3000 Business',
-        'categoria' => 'Informática',
-        'preco' => 2499.99,
-        'descricao' => 'Notebook profissional com processador Intel Core i5 de 12ª geração, 16GB RAM e SSD 512GB.',
-        'estoque' => 8,
-        'destaque' => true
-    ],
-    [
-        'id' => 3,
-        'nome' => 'Fone de Ouvido Sony WH-1000XM5 Wireless',
-        'categoria' => 'Áudio',
-        'preco' => 199.99,
-        'descricao' => 'Fone de ouvido premium com cancelamento de ruído líder da indústria e qualidade de áudio Hi-Res.',
-        'estoque' => 23,
-        'destaque' => true
-    ],
-    [
-        'id' => 4,
-        'nome' => 'Smart TV LG 55" 4K OLED',
-        'categoria' => 'Eletrônicos',
-        'preco' => 1899.99,
-        'descricao' => 'Smart TV OLED 55 polegadas com resolução 4K Ultra HD, tecnologia α9 Gen5 AI Processor.',
-        'estoque' => 12,
-        'destaque' => true
-    ],
-    [
-        'id' => 5,
-        'nome' => 'Mouse Gamer Logitech G Pro X',
-        'categoria' => 'Gaming',
-        'preco' => 89.99,
-        'descricao' => 'Mouse gamer profissional com sensor HERO 25K, até 25.600 DPI, switches mecânicos Lightspeed.',
-        'estoque' => 35,
-        'destaque' => false
-    ],
-    [
-        'id' => 6,
-        'nome' => 'Teclado Mecânico Corsair K95',
-        'categoria' => 'Gaming',
-        'preco' => 299.99,
-        'descricao' => 'Teclado mecânico gamer premium com switches Cherry MX Speed, iluminação RGB por tecla.',
-        'estoque' => 18,
-        'destaque' => false
-    ],
-    [
-        'id' => 7,
-        'nome' => 'Monitor Gamer ASUS ROG 27"',
-        'categoria' => 'Gaming',
-        'preco' => 1299.99,
-        'descricao' => 'Monitor gamer 27 polegadas, 144Hz, 1ms, G-Sync, resolução QHD 2560x1440.',
-        'estoque' => 9,
-        'destaque' => false
-    ],
-    [
-        'id' => 8,
-        'nome' => 'Webcam Logitech C920 HD Pro',
-        'categoria' => 'Informática',
-        'preco' => 159.99,
-        'descricao' => 'Webcam Full HD 1080p com microfone estéreo, ideal para videoconferências e streaming.',
-        'estoque' => 27,
-        'destaque' => false
-    ],
-    [
-        'id' => 9,
-        'nome' => 'SSD Kingston NV2 1TB',
-        'categoria' => 'Informática',
-        'preco' => 249.99,
-        'descricao' => 'SSD NVMe PCIe 4.0 de 1TB, velocidades de leitura até 3.500 MB/s, ideal para upgrades.',
-        'estoque' => 42,
-        'destaque' => false
-    ],
-    [
-        'id' => 10,
-        'nome' => 'Caixa de Som JBL Charge 5',
-        'categoria' => 'Áudio',
-        'preco' => 399.99,
-        'descricao' => 'Caixa de som Bluetooth portátil, à prova d\'água IP67, 20 horas de bateria.',
-        'estoque' => 16,
-        'destaque' => false
-    ],
-    [
-        'id' => 11,
-        'nome' => 'Tablet Apple iPad Air 5ª Geração',
-        'categoria' => 'Eletrônicos',
-        'preco' => 1899.99,
-        'descricao' => 'iPad Air com chip M1, tela Liquid Retina 10.9", 64GB, Wi-Fi, compatível com Apple Pencil.',
-        'estoque' => 7,
-        'destaque' => false
-    ],
-    [
-        'id' => 12,
-        'nome' => 'Carregador Wireless Anker PowerWave',
-        'categoria' => 'Eletrônicos',
-        'preco' => 79.99,
-        'descricao' => 'Carregador sem fio 15W, compatível com iPhone e Android, design elegante e compacto.',
-        'estoque' => 31,
-        'destaque' => false
-    ]
-];
+// Obter todos os produtos do banco de dados
+$produtos = obterTodosProdutos();
+
+// Obter categorias únicas do banco de dados
+$categorias = obterCategorias();
 
 // Filtros
 $categoria_filtro = $_GET['categoria'] ?? '';
@@ -126,16 +21,13 @@ $busca = $_GET['busca'] ?? '';
 
 // Aplicar filtros
 $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria_filtro, $preco_min, $preco_max, $busca) {
-    $categoria_ok = empty($categoria_filtro) || $produto['categoria'] === $categoria_filtro;
+    $categoria_ok = empty($categoria_filtro) || $produto['categoria_nome'] === $categoria_filtro;
     $preco_ok = $produto['preco'] >= $preco_min && $produto['preco'] <= $preco_max;
     $busca_ok = empty($busca) || stripos($produto['nome'], $busca) !== false || stripos($produto['descricao'], $busca) !== false;
     
     return $categoria_ok && $preco_ok && $busca_ok;
 });
 
-// Obter categorias únicas
-$categorias = array_unique(array_column($produtos, 'categoria'));
-sort($categorias);
 ?>
 
 <!DOCTYPE html>
@@ -523,7 +415,7 @@ sort($categorias);
                 <nav>
                     <ul>
                         <li><a href="index.php">Início</a></li>
-                        <li><a href="produtos_new.php">Produtos</a></li>
+                        <li><a href="produtos.php">Produtos</a></li>
                         <li><a href="sobre.php">Sobre</a></li>
                         <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
@@ -568,9 +460,9 @@ sort($categorias);
                         <select name="categoria" class="filter-select">
                             <option value="">Todas as categorias</option>
                             <?php foreach ($categorias as $categoria): ?>
-                                <option value="<?php echo htmlspecialchars($categoria); ?>" 
-                                        <?php echo $categoria_filtro === $categoria ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($categoria); ?>
+                                <option value="<?php echo htmlspecialchars($categoria['nome']); ?>" 
+                                        <?php echo $categoria_filtro === $categoria['nome'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($categoria['nome']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -595,7 +487,7 @@ sort($categorias);
                     <button type="submit" class="btn-filter">
                         🔍 Aplicar Filtros
                     </button>
-                    <a href="produtos_new.php" class="btn-clear">
+                    <a href="produtos.php" class="btn-clear">
                         🗑️ Limpar Filtros
                     </a>
                 </div>
@@ -622,7 +514,7 @@ sort($categorias);
                 <div class="no-products-icon">📦</div>
                 <h3 class="no-products-title">Nenhum produto encontrado</h3>
                 <p>Tente ajustar os filtros de busca ou navegue por todas as categorias.</p>
-                <a href="produtos_new.php" class="btn btn-primary" style="margin-top: var(--spacing-lg);">
+                <a href="produtos.php" class="btn btn-primary" style="margin-top: var(--spacing-lg);">
                     Ver Todos os Produtos
                 </a>
             </div>
@@ -631,11 +523,15 @@ sort($categorias);
                 <?php foreach ($produtos_filtrados as $produto): ?>
                     <div class="product-card" data-nome="<?php echo htmlspecialchars($produto['nome']); ?>" 
                          data-preco="<?php echo $produto['preco']; ?>" 
-                         data-categoria="<?php echo htmlspecialchars($produto['categoria']); ?>">
+                         data-categoria="<?php echo htmlspecialchars($produto['categoria_nome']); ?>">
                         <div class="product-image">
-                            <span>Imagem do Produto</span>
+                            <?php if (!empty($produto['imagem_url'])): ?>
+                                <img src="<?php echo htmlspecialchars($produto['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                            <?php else: ?>
+                                <span>Imagem do Produto</span>
+                            <?php endif; ?>
                         </div>
-                        <div class="product-category"><?php echo htmlspecialchars($produto['categoria']); ?></div>
+                        <div class="product-category"><?php echo htmlspecialchars($produto['categoria_nome']); ?></div>
                         <h3 class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></h3>
                         <div class="product-price">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></div>
                         <p class="product-description"><?php echo htmlspecialchars($produto['descricao']); ?></p>
@@ -769,7 +665,7 @@ sort($categorias);
                     });
                     
                     // Atualizar contador
-                    const visibleCards = document.querySelectorAll('.product-card[style*="display: block"], .product-card:not([style*="display: none"])');
+                    const visibleCards = document.querySelectorAll('.product-card[style*="display: block"], .product-card:not([style*="display: none"]))');
                     const counter = document.querySelector('.products-count strong');
                     if (counter) {
                         counter.textContent = visibleCards.length;

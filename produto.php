@@ -1,185 +1,52 @@
 <?php
 session_start();
+require_once 'db_connect.php';
 
-// Inicializar carrinho se não existir
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = array();
 }
 
-// Obter ID do produto
-$produto_id = isset($_GET['id']) ? intval($_GET['id']) : 1;
+$produto_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$produto = obterProdutoPorId($produto_id);
 
-// Base de dados de produtos com descrições detalhadas
-$produtos = [
-    1 => [
-        'id' => 1,
-        'nome' => 'Smartphone Samsung Galaxy S24 Ultra',
-        'categoria' => 'Eletrônicos',
-        'preco' => 899.99,
-        'preco_original' => 1199.99,
-        'desconto' => 25,
-        'descricao_curta' => 'Smartphone premium com tela Dynamic AMOLED de 6.8 polegadas, câmera de 200MP e S Pen integrada.',
-        'descricao_completa' => 'O Samsung Galaxy S24 Ultra representa o ápice da tecnologia móvel, oferecendo uma experiência incomparável para usuários exigentes. Com sua tela Dynamic AMOLED 2X de 6.8 polegadas e resolução QHD+, cada imagem ganha vida com cores vibrantes e detalhes impressionantes. O display suporta taxa de atualização adaptativa de 120Hz, garantindo fluidez excepcional em jogos e navegação.
-
-A câmera principal de 200MP com zoom óptico de 10x permite capturar fotos profissionais mesmo à distância, enquanto o sistema de estabilização óptica garante imagens nítidas em qualquer situação. O processador Snapdragon 8 Gen 3 oferece desempenho excepcional para multitarefas e jogos pesados, complementado por 12GB de RAM LPDDR5X e 256GB de armazenamento UFS 4.0.
-
-A S Pen integrada transforma o dispositivo em uma ferramenta de produtividade completa, permitindo anotações precisas, edição de fotos e controle remoto de apresentações. A bateria de 5000mAh com carregamento rápido de 45W garante uso intenso durante todo o dia, enquanto a certificação IP68 oferece proteção contra água e poeira.',
-        'especificacoes' => [
-            'Tela' => '6.8" Dynamic AMOLED 2X, QHD+, 120Hz',
-            'Processador' => 'Snapdragon 8 Gen 3',
-            'RAM' => '12GB LPDDR5X',
-            'Armazenamento' => '256GB UFS 4.0',
-            'Câmera Principal' => '200MP + 50MP + 12MP + 10MP',
-            'Câmera Frontal' => '12MP',
-            'Bateria' => '5000mAh, carregamento 45W',
-            'Sistema' => 'Android 14 com One UI 6.1',
-            'Conectividade' => '5G, Wi-Fi 7, Bluetooth 5.3',
-            'Resistência' => 'IP68',
-            'Dimensões' => '162.3 x 79.0 x 8.6 mm',
-            'Peso' => '232g'
-        ],
-        'imagens' => ['produto_1_1.jpg', 'produto_1_2.jpg', 'produto_1_3.jpg'],
-        'estoque' => 15,
-        'vendedor' => 'Samsung Store Oficial',
-        'avaliacao_media' => 4.8,
-        'total_avaliacoes' => 1247,
-        'frete_gratis' => true,
-        'entrega_rapida' => true
-    ],
-    2 => [
-        'id' => 2,
-        'nome' => 'Notebook Dell Inspiron 15 3000 Business',
-        'categoria' => 'Informática',
-        'preco' => 2499.99,
-        'preco_original' => 2899.99,
-        'desconto' => 14,
-        'descricao_curta' => 'Notebook profissional com processador Intel Core i5 de 12ª geração, 16GB RAM e SSD 512GB.',
-        'descricao_completa' => 'O Dell Inspiron 15 3000 Business foi desenvolvido especificamente para profissionais que exigem performance e confiabilidade. Equipado com processador Intel Core i5-1235U de 12ª geração, oferece o equilíbrio perfeito entre eficiência energética e poder de processamento para tarefas corporativas exigentes.
-
-A tela Full HD de 15.6 polegadas com tecnologia antirreflexo proporciona visualização confortável mesmo em ambientes com muita luz, ideal para longas jornadas de trabalho. Os 16GB de RAM DDR4 garantem multitarefas fluidas, permitindo executar múltiplas aplicações simultaneamente sem perda de performance.
-
-O SSD NVMe de 512GB oferece inicialização rápida do sistema e acesso instantâneo aos arquivos, aumentando significativamente a produtividade. O design robusto com acabamento profissional transmite seriedade e elegância em reuniões e apresentações.
-
-A conectividade completa inclui portas USB-C, USB 3.2, HDMI 1.4, leitor de cartão SD e entrada para fone de ouvido, atendendo todas as necessidades de conectividade do ambiente corporativo. A bateria de longa duração permite trabalhar por até 8 horas sem necessidade de recarga.',
-        'especificacoes' => [
-            'Processador' => 'Intel Core i5-1235U (12ª geração)',
-            'Memória RAM' => '16GB DDR4 2666MHz (expansível até 32GB)',
-            'Armazenamento' => 'SSD 512GB NVMe PCIe',
-            'Tela' => '15.6" Full HD (1920x1080) antirreflexo',
-            'Placa de Vídeo' => 'Intel Iris Xe Graphics',
-            'Sistema Operacional' => 'Windows 11 Pro',
-            'Conectividade' => 'Wi-Fi 6, Bluetooth 5.2',
-            'Portas' => '2x USB 3.2, 1x USB-C, HDMI 1.4, SD Card',
-            'Áudio' => 'Alto-falantes estéreo com Waves MaxxAudio',
-            'Webcam' => 'HD 720p com microfone integrado',
-            'Bateria' => '3-cell 41Wh, até 8 horas de uso',
-            'Dimensões' => '358.5 x 235.6 x 18.9 mm',
-            'Peso' => '1.85kg'
-        ],
-        'imagens' => ['produto_2_1.jpg', 'produto_2_2.jpg', 'produto_2_3.jpg'],
-        'estoque' => 8,
-        'vendedor' => 'Dell Oficial',
-        'avaliacao_media' => 4.6,
-        'total_avaliacoes' => 892,
-        'frete_gratis' => true,
-        'entrega_rapida' => false
-    ],
-    3 => [
-        'id' => 3,
-        'nome' => 'Fone de Ouvido Sony WH-1000XM5 Wireless',
-        'categoria' => 'Áudio',
-        'preco' => 199.99,
-        'preco_original' => 299.99,
-        'desconto' => 33,
-        'descricao_curta' => 'Fone de ouvido premium com cancelamento de ruído líder da indústria e qualidade de áudio Hi-Res.',
-        'descricao_completa' => 'O Sony WH-1000XM5 estabelece novos padrões em cancelamento de ruído e qualidade sonora. Equipado com dois processadores dedicados e oito microfones, oferece o cancelamento de ruído mais avançado da categoria, bloqueando efetivamente ruídos de aviões, trânsito e ambientes ruidosos.
-
-Os drivers de 30mm especialmente desenvolvidos reproduzem áudio Hi-Res com clareza excepcional, desde graves profundos até agudos cristalinos. A tecnologia LDAC permite transmissão de áudio de alta qualidade via Bluetooth, mantendo a fidelidade sonora mesmo sem fio.
-
-O design renovado apresenta construção mais leve e confortável, com almofadas macias que se adaptam perfeitamente ao formato da cabeça. A bateria de longa duração oferece até 30 horas de reprodução com cancelamento de ruído ativo, e o carregamento rápido de 3 minutos proporciona 3 horas adicionais de uso.
-
-A conectividade inteligente permite conexão simultânea com dois dispositivos, facilitando a alternância entre smartphone e laptop. Os controles touch intuitivos respondem a gestos simples para ajustar volume, pular faixas e atender chamadas.',
-        'especificacoes' => [
-            'Tipo' => 'Over-ear, fechado',
-            'Drivers' => '30mm, neodímio',
-            'Resposta de Frequência' => '4Hz - 40kHz',
-            'Impedância' => '48Ω (1kHz)',
-            'Conectividade' => 'Bluetooth 5.2, LDAC, SBC, AAC',
-            'Cancelamento de Ruído' => 'Ativo com 2 processadores',
-            'Microfones' => '8 microfones para NC e chamadas',
-            'Bateria' => 'Até 30h (NC ligado), 40h (NC desligado)',
-            'Carregamento' => 'USB-C, carregamento rápido',
-            'Controles' => 'Touch panel no lado direito',
-            'Peso' => '250g',
-            'Acessórios' => 'Cabo USB-C, cabo de áudio 3.5mm, estojo',
-            'Certificações' => 'Hi-Res Audio, Hi-Res Audio Wireless'
-        ],
-        'imagens' => ['produto_3_1.jpg', 'produto_3_2.jpg', 'produto_3_3.jpg'],
-        'estoque' => 23,
-        'vendedor' => 'Sony Store',
-        'avaliacao_media' => 4.9,
-        'total_avaliacoes' => 2156,
-        'frete_gratis' => true,
-        'entrega_rapida' => true
-    ]
-];
-
-// Verificar se produto existe
-if (!isset($produtos[$produto_id])) {
-    header('Location: index.php');
+if (!$produto) {
+    header('Location: produtos.php');
     exit();
 }
 
-$produto = $produtos[$produto_id];
+// Obter avaliações do produto
+$avaliacoes = obterAvaliacoesProduto($produto_id);
 
-// Produtos relacionados (mesma categoria)
-$produtos_relacionados = array_filter($produtos, function($p) use ($produto) {
-    return $p['categoria'] === $produto['categoria'] && $p['id'] !== $produto['id'];
-});
+// Obter produtos relacionados (mesma categoria, excluindo o produto atual)
+$produtos_relacionados = obterProdutosRelacionados($produto['categoria_id'], $produto_id);
 
-// Avaliações de exemplo
-$avaliacoes = [
-    [
-        'usuario' => 'Carlos M.',
-        'nota' => 5,
-        'titulo' => 'Excelente produto!',
-        'comentario' => 'Superou minhas expectativas. A qualidade é excepcional e chegou muito rápido.',
-        'data' => '2025-01-15',
-        'verificado' => true,
-        'util' => 12
-    ],
-    [
-        'usuario' => 'Ana S.',
-        'nota' => 4,
-        'titulo' => 'Muito bom, recomendo',
-        'comentario' => 'Produto de qualidade, exatamente como descrito. Único ponto negativo foi a demora na entrega.',
-        'data' => '2025-01-10',
-        'verificado' => true,
-        'util' => 8
-    ],
-    [
-        'usuario' => 'Roberto L.',
-        'nota' => 5,
-        'titulo' => 'Perfeito!',
-        'comentario' => 'Já é meu segundo produto desta marca. Qualidade impecável e atendimento excelente.',
-        'data' => '2025-01-08',
-        'verificado' => true,
-        'util' => 15
-    ]
-];
-
-// Processar adição ao carrinho
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_carrinho'])) {
-    $quantidade = intval($_POST['quantidade'] ?? 1);
-    
-    if (isset($_SESSION['cart'][$produto_id])) {
-        $_SESSION['cart'][$produto_id] += $quantidade;
+// Processar envio de avaliação
+$avaliacao_sucesso = '';
+$avaliacao_erro = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) {
+    if (!isset($_SESSION['usuario_id'])) {
+        $avaliacao_erro = 'Você precisa estar logado para enviar uma avaliação.';
     } else {
-        $_SESSION['cart'][$produto_id] = $quantidade;
+        $usuario_id = $_SESSION['usuario_id'];
+        $nota = isset($_POST['nota']) ? intval($_POST['nota']) : 0;
+        $comentario = trim($_POST['comentario'] ?? '');
+
+        if ($nota < 1 || $nota > 5) {
+            $avaliacao_erro = 'A nota deve ser entre 1 e 5 estrelas.';
+        } elseif (empty($comentario)) {
+            $avaliacao_erro = 'O comentário da avaliação é obrigatório.';
+        } else {
+            if (adicionarAvaliacao($produto_id, $usuario_id, $nota, $comentario)) {
+                $avaliacao_sucesso = 'Sua avaliação foi enviada com sucesso!';
+                // Recarregar avaliações após adicionar nova
+                $avaliacoes = obterAvaliacoesProduto($produto_id);
+            } else {
+                $avaliacao_erro = 'Erro ao enviar avaliação. Tente novamente.';
+            }
+        }
     }
-    
-    $mensagem_sucesso = "Produto adicionado ao carrinho!";
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -192,578 +59,364 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_carrinho'])
     <link rel="stylesheet" href="components.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .product-container {
-            max-width: 1400px;
+        .product-detail-container {
+            max-width: 1200px;
             margin: 0 auto;
             padding: var(--spacing-xl) var(--spacing-lg);
         }
-        
-        .breadcrumb {
-            margin-bottom: var(--spacing-xl);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        .breadcrumb a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color var(--transition-normal);
-        }
-        
-        .breadcrumb a:hover {
-            color: var(--primary-color);
-        }
-        
-        .product-main {
+
+        .product-detail-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1.5fr;
             gap: var(--spacing-3xl);
             margin-bottom: var(--spacing-3xl);
         }
-        
-        .product-gallery {
-            position: sticky;
-            top: 100px;
-            height: fit-content;
-        }
-        
-        .main-image {
-            width: 100%;
-            height: 500px;
+
+        .product-image-gallery {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
             border-radius: var(--border-radius-xl);
+            padding: var(--spacing-xl);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-bottom: var(--spacing-lg);
-            color: var(--text-muted);
-            font-size: 1.2rem;
             position: relative;
             overflow: hidden;
         }
-        
-        .image-thumbnails {
+
+        .main-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .thumbnail-gallery {
             display: flex;
             gap: var(--spacing-md);
-            justify-content: center;
+            overflow-x: auto;
+            padding-bottom: var(--spacing-sm);
         }
-        
+
         .thumbnail {
             width: 80px;
             height: 80px;
-            background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
+            object-fit: cover;
             border-radius: var(--border-radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: 2px solid transparent;
             cursor: pointer;
             transition: all var(--transition-normal);
-            color: var(--text-muted);
-            font-size: 0.8rem;
         }
-        
-        .thumbnail:hover,
-        .thumbnail.active {
+
+        .thumbnail.active, .thumbnail:hover {
             border-color: var(--primary-color);
             transform: translateY(-2px);
         }
-        
+
         .product-info {
-            padding: var(--spacing-lg) 0;
-        }
-        
-        .product-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-light);
-            margin-bottom: var(--spacing-md);
-            line-height: 1.3;
-        }
-        
-        .product-rating {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
-        }
-        
-        .stars {
-            display: flex;
-            gap: var(--spacing-xs);
-        }
-        
-        .star {
-            color: #ffc107;
-            font-size: 1.2rem;
-        }
-        
-        .star.empty {
-            color: var(--text-dark);
-        }
-        
-        .rating-text {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        .rating-text a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-        
-        .price-section {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-xl);
-            margin-bottom: var(--spacing-xl);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-3xl);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        
-        .price-original {
-            color: var(--text-dark);
-            text-decoration: line-through;
-            font-size: 1.1rem;
-            margin-bottom: var(--spacing-xs);
-        }
-        
-        .price-current {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: var(--spacing-sm);
-        }
-        
-        .discount-badge {
-            background: linear-gradient(135deg, #28a745, #20c997);
+
+        .product-category {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             color: white;
             padding: var(--spacing-xs) var(--spacing-md);
             border-radius: var(--border-radius-full);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            display: inline-block;
-            margin-bottom: var(--spacing-lg);
-        }
-        
-        .shipping-info {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-xl);
-        }
-        
-        .shipping-item {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        .shipping-item.highlight {
-            color: var(--success-color);
-            font-weight: 500;
-        }
-        
-        .quantity-selector {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-lg);
-            margin-bottom: var(--spacing-xl);
-        }
-        
-        .quantity-label {
-            color: var(--text-light);
-            font-weight: 500;
-        }
-        
-        .quantity-controls {
-            display: flex;
-            align-items: center;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-md);
-            overflow: hidden;
-        }
-        
-        .quantity-btn {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            padding: var(--spacing-md);
-            cursor: pointer;
-            transition: background var(--transition-normal);
-            font-size: 1.2rem;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .quantity-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .quantity-input {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            text-align: center;
-            width: 60px;
-            padding: var(--spacing-md);
-            font-size: 1rem;
-        }
-        
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-md);
-        }
-        
-        .btn-buy-now {
-            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-            color: white;
-            border: none;
-            padding: var(--spacing-lg) var(--spacing-xl);
-            border-radius: var(--border-radius-md);
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-normal);
+            margin-bottom: var(--spacing-md);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
-        .btn-buy-now:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .btn-add-cart {
-            background: transparent;
+
+        .product-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 800;
             color: var(--text-light);
-            border: 2px solid var(--glass-border);
-            padding: var(--spacing-lg) var(--spacing-xl);
-            border-radius: var(--border-radius-md);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-normal);
+            margin-bottom: var(--spacing-md);
+            line-height: 1.2;
         }
-        
-        .btn-add-cart:hover {
-            background: var(--glass-bg);
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-        }
-        
-        .seller-info {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-lg);
-            margin-top: var(--spacing-xl);
-        }
-        
-        .seller-name {
-            color: var(--text-light);
-            font-weight: 600;
-            margin-bottom: var(--spacing-sm);
-        }
-        
-        .seller-badge {
-            background: var(--success-color);
-            color: white;
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--border-radius-sm);
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .product-details {
-            margin-top: var(--spacing-3xl);
-        }
-        
-        .details-tabs {
+
+        .product-rating {
             display: flex;
-            border-bottom: 1px solid var(--glass-border);
-            margin-bottom: var(--spacing-xl);
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
         }
-        
-        .tab-button {
-            background: none;
-            border: none;
+
+        .stars {
+            color: gold;
+            font-size: 1.2rem;
+        }
+
+        .reviews-count {
             color: var(--text-muted);
-            padding: var(--spacing-lg) var(--spacing-xl);
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            font-weight: 500;
-            border-bottom: 2px solid transparent;
+            font-size: 0.9rem;
         }
-        
-        .tab-button.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-            animation: fadeInUp 0.5s ease-out;
-        }
-        
-        .description-content {
-            color: var(--text-light);
-            line-height: 1.8;
-            font-size: 1.05rem;
-        }
-        
-        .description-content p {
-            margin-bottom: var(--spacing-lg);
-        }
-        
-        .specs-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .specs-table tr {
-            border-bottom: 1px solid var(--glass-border);
-        }
-        
-        .specs-table td {
-            padding: var(--spacing-lg);
-            vertical-align: top;
-        }
-        
-        .specs-table td:first-child {
-            color: var(--text-muted);
-            font-weight: 500;
-            width: 200px;
-        }
-        
-        .specs-table td:last-child {
-            color: var(--text-light);
-        }
-        
-        .reviews-section {
-            margin-top: var(--spacing-xl);
-        }
-        
-        .reviews-summary {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: var(--spacing-xl);
-            margin-bottom: var(--spacing-xl);
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-xl);
-        }
-        
-        .rating-overview {
-            text-align: center;
-        }
-        
-        .rating-number {
-            font-size: 3rem;
+
+        .product-price {
+            font-size: clamp(2rem, 5vw, 3rem);
             font-weight: 700;
             color: var(--primary-color);
-            margin-bottom: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
         }
-        
-        .rating-bars {
+
+        .product-short-description {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .add-to-cart-section {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+        }
+
+        .quantity-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            padding: var(--spacing-md);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background var(--transition-normal);
+        }
+
+        .quantity-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .quantity-input {
+            width: 60px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            font-size: 1rem;
+            -moz-appearance: textfield;
+        }
+
+        .quantity-input::-webkit-outer-spin-button,
+        .quantity-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .btn-add-to-cart {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
             gap: var(--spacing-sm);
         }
-        
-        .rating-bar {
+
+        .btn-add-to-cart:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-full-description-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-3xl);
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: var(--spacing-xl);
             display: flex;
             align-items: center;
             gap: var(--spacing-md);
         }
-        
-        .bar-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            width: 60px;
-        }
-        
-        .bar-fill {
+
+        .section-title::after {
+            content: '';
             flex: 1;
-            height: 8px;
-            background: var(--glass-border);
-            border-radius: var(--border-radius-full);
-            overflow: hidden;
-        }
-        
-        .bar-progress {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            height: 2px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             border-radius: var(--border-radius-full);
         }
-        
-        .bar-count {
+
+        .product-full-description p {
             color: var(--text-muted);
-            font-size: 0.9rem;
-            width: 40px;
-            text-align: right;
-        }
-        
-        .review-item {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-xl);
+            line-height: 1.8;
             margin-bottom: var(--spacing-lg);
         }
-        
+
+        .product-specs table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: var(--spacing-xl);
+        }
+
+        .product-specs th, .product-specs td {
+            padding: var(--spacing-md);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            text-align: left;
+        }
+
+        .product-specs th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+        }
+
+        .product-specs td {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-muted);
+        }
+
+        .reviews-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-3xl);
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .review-form-section {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rating-input {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .rating-input input[type="radio"] {
+            display: none;
+        }
+
+        .rating-input label {
+            font-size: 2rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: color var(--transition-normal);
+        }
+
+        .rating-input label:hover,
+        .rating-input label:hover ~ label,
+        .rating-input input[type="radio"]:checked ~ label {
+            color: gold;
+        }
+
+        .review-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xl);
+        }
+
+        .review-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .review-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: var(--spacing-md);
-        }
-        
-        .review-user {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-xs);
-        }
-        
-        .user-name {
-            color: var(--text-light);
-            font-weight: 600;
-        }
-        
-        .review-date {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        
-        .verified-badge {
-            background: var(--success-color);
-            color: white;
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--border-radius-sm);
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .review-title {
-            color: var(--text-light);
-            font-weight: 600;
+            align-items: center;
             margin-bottom: var(--spacing-sm);
         }
-        
+
+        .reviewer-name {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .review-stars {
+            color: gold;
+            font-size: 1rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
         .review-comment {
             color: var(--text-muted);
             line-height: 1.6;
-            margin-bottom: var(--spacing-md);
         }
-        
-        .review-actions {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-lg);
-        }
-        
-        .helpful-btn {
-            background: none;
+
+        .related-products-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--border-radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            font-size: 0.85rem;
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-3xl);
         }
-        
-        .helpful-btn:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-        
-        .related-products {
-            margin-top: var(--spacing-3xl);
-        }
-        
-        .related-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--text-light);
-            margin-bottom: var(--spacing-xl);
-        }
-        
-        .related-grid {
+
+        .related-products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: var(--spacing-xl);
         }
-        
-        .success-message {
-            background: rgba(40, 167, 69, 0.2);
-            border: 1px solid rgba(40, 167, 69, 0.3);
-            color: #28a745;
-            padding: var(--spacing-lg);
-            border-radius: var(--border-radius-md);
-            margin-bottom: var(--spacing-xl);
-            backdrop-filter: blur(10px);
-            text-align: center;
-            font-weight: 500;
+
+        @media (max-width: 992px) {
+            .product-detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
-        
+
         @media (max-width: 768px) {
-            .product-main {
-                grid-template-columns: 1fr;
-                gap: var(--spacing-xl);
+            .add-to-cart-section {
+                flex-direction: column;
+                align-items: stretch;
             }
-            
-            .product-gallery {
-                position: static;
+
+            .quantity-control {
+                width: 100%;
+                justify-content: center;
             }
-            
-            .main-image {
-                height: 300px;
-            }
-            
-            .product-title {
-                font-size: 1.5rem;
-            }
-            
-            .price-current {
-                font-size: 2rem;
-            }
-            
-            .details-tabs {
-                flex-wrap: wrap;
-            }
-            
-            .tab-button {
-                padding: var(--spacing-md);
-                font-size: 0.9rem;
-            }
-            
-            .reviews-summary {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-            
-            .related-grid {
-                grid-template-columns: 1fr;
+
+            .btn-add-to-cart {
+                width: 100%;
             }
         }
     </style>
@@ -781,9 +434,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_carrinho'])
                         <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
                             <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
+                                <li><a href="admin.php">Admin</a></li>
+                            <?php endif; ?>
                             <li><a href="logout.php">Sair</a></li>
                         <?php else: ?>
-                            <li><a href="login_new.php" class="btn-login">Login</a></li>
+                            <li><a href="login.php" class="btn-login">Login</a></li>
                         <?php endif; ?>
                     </ul>
                 </nav>
@@ -794,233 +450,163 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_carrinho'])
         </div>
     </header>
 
-    <main class="product-container">
-        <nav class="breadcrumb">
-            <a href="index.php">Início</a> > 
-            <a href="produtos.php">Produtos</a> > 
-            <a href="#"><?php echo htmlspecialchars($produto['categoria']); ?></a> > 
-            <span><?php echo htmlspecialchars($produto['nome']); ?></span>
-        </nav>
-
-        <?php if (isset($mensagem_sucesso)): ?>
-            <div class="success-message">
-                ✅ <?php echo htmlspecialchars($mensagem_sucesso); ?>
-            </div>
-        <?php endif; ?>
-
-        <div class="product-main">
-            <div class="product-gallery">
-                <div class="main-image">
-                    <span>Imagem Principal do Produto</span>
-                </div>
-                <div class="image-thumbnails">
-                    <div class="thumbnail active">Img 1</div>
-                    <div class="thumbnail">Img 2</div>
-                    <div class="thumbnail">Img 3</div>
+    <main class="product-detail-container">
+        <div class="product-detail-grid">
+            <div class="product-image-gallery">
+                <img src="<?php echo htmlspecialchars($produto['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>" class="main-image" id="mainProductImage">
+                <div class="thumbnail-gallery">
+                    <img src="<?php echo htmlspecialchars($produto['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>" class="thumbnail active" onclick="changeMainImage(this)">
+                    <?php
+                    // Adicionar mais imagens de exemplo se houver
+                    // Isso seria dinâmico se houvesse uma tabela de imagens para produtos
+                    $extra_images = [
+                        'https://via.placeholder.com/150/FF5733/FFFFFF?text=Imagem+2',
+                        'https://via.placeholder.com/150/33FF57/FFFFFF?text=Imagem+3',
+                        'https://via.placeholder.com/150/3357FF/FFFFFF?text=Imagem+4'
+                    ];
+                    foreach ($extra_images as $img_url) {
+                        echo '<img src="' . htmlspecialchars($img_url) . '" alt="' . htmlspecialchars($produto['nome']) . '" class="thumbnail" onclick="changeMainImage(this)">';
+                    }
+                    ?>
                 </div>
             </div>
 
             <div class="product-info">
-                <h1 class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></h1>
-                
-                <div class="product-rating">
-                    <div class="stars">
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <span class="star <?php echo $i <= floor($produto['avaliacao_media']) ? '' : 'empty'; ?>">★</span>
-                        <?php endfor; ?>
+                <div>
+                    <div class="product-category"><?php echo htmlspecialchars($produto['categoria_nome']); ?></div>
+                    <h1 class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></h1>
+                    <div class="product-rating">
+                        <span class="stars">★★★★★</span>
+                        <span class="reviews-count">(<?php echo count($avaliacoes); ?> avaliações)</span>
                     </div>
-                    <span class="rating-text">
-                        <?php echo $produto['avaliacao_media']; ?> 
-                        (<a href="#reviews"><?php echo $produto['total_avaliacoes']; ?> avaliações</a>)
-                    </span>
+                    <div class="product-price">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></div>
+                    <p class="product-short-description"><?php echo htmlspecialchars($produto['descricao_curta']); ?></p>
                 </div>
 
-                <div class="price-section">
-                    <?php if ($produto['desconto'] > 0): ?>
-                        <div class="price-original">R$ <?php echo number_format($produto['preco_original'], 2, ',', '.'); ?></div>
-                        <div class="discount-badge"><?php echo $produto['desconto']; ?>% OFF</div>
-                    <?php endif; ?>
-                    <div class="price-current">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></div>
-                    
-                    <div class="shipping-info">
-                        <?php if ($produto['frete_gratis']): ?>
-                            <div class="shipping-item highlight">
-                                🚚 Frete GRÁTIS para todo o Brasil
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($produto['entrega_rapida']): ?>
-                            <div class="shipping-item highlight">
-                                ⚡ Entrega rápida em 24-48h
-                            </div>
-                        <?php endif; ?>
-                        <div class="shipping-item">
-                            📦 Estoque disponível: <?php echo $produto['estoque']; ?> unidades
-                        </div>
-                        <div class="shipping-item">
-                            🔒 Compra 100% segura e protegida
-                        </div>
+                <div class="add-to-cart-section">
+                    <div class="quantity-control">
+                        <button class="quantity-btn" onclick="changeQuantity(-1)">-</button>
+                        <input type="number" id="quantity" value="1" min="1" max="<?php echo $produto['estoque']; ?>" class="quantity-input">
+                        <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
                     </div>
-                </div>
-
-                <form method="POST" class="purchase-form">
-                    <div class="quantity-selector">
-                        <span class="quantity-label">Quantidade:</span>
-                        <div class="quantity-controls">
-                            <button type="button" class="quantity-btn" onclick="changeQuantity(-1)">-</button>
-                            <input type="number" class="quantity-input" name="quantidade" value="1" min="1" max="<?php echo $produto['estoque']; ?>" id="quantity">
-                            <button type="button" class="quantity-btn" onclick="changeQuantity(1)">+</button>
-                        </div>
-                    </div>
-
-                    <div class="action-buttons">
-                        <button type="submit" name="comprar_agora" class="btn-buy-now">
-                            Comprar Agora
-                        </button>
-                        <button type="submit" name="adicionar_carrinho" class="btn-add-cart">
-                            Adicionar ao Carrinho
-                        </button>
-                    </div>
-                </form>
-
-                <div class="seller-info">
-                    <div class="seller-name"><?php echo htmlspecialchars($produto['vendedor']); ?></div>
-                    <span class="seller-badge">✓ Vendedor Verificado</span>
+                    <button class="btn-add-to-cart" onclick="addToCart(<?php echo $produto['id']; ?>)">
+                        <span>🛒</span> Adicionar ao Carrinho
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="product-details">
-            <div class="details-tabs">
-                <button class="tab-button active" onclick="switchTab('description')">Descrição</button>
-                <button class="tab-button" onclick="switchTab('specifications')">Especificações</button>
-                <button class="tab-button" onclick="switchTab('reviews')">Avaliações</button>
+        <div class="product-full-description-section">
+            <h2 class="section-title">📝 Descrição Detalhada</h2>
+            <div class="product-full-description">
+                <?php echo nl2br(htmlspecialchars($produto['descricao_longa'])); // nl2br para quebras de linha ?>
             </div>
 
-            <div class="tab-content active" id="description">
-                <div class="description-content">
-                    <?php 
-                    $paragraphs = explode("\n\n", $produto['descricao_completa']);
-                    foreach ($paragraphs as $paragraph): 
-                    ?>
-                        <p><?php echo htmlspecialchars($paragraph); ?></p>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <div class="tab-content" id="specifications">
-                <table class="specs-table">
-                    <?php foreach ($produto['especificacoes'] as $spec => $value): ?>
+            <h3 class="section-title" style="margin-top: var(--spacing-3xl);">📊 Especificações Técnicas</h3>
+            <div class="product-specs">
+                <table>
+                    <thead>
                         <tr>
-                            <td><?php echo htmlspecialchars($spec); ?></td>
-                            <td><?php echo htmlspecialchars($value); ?></td>
+                            <th>Característica</th>
+                            <th>Detalhe</th>
                         </tr>
-                    <?php endforeach; ?>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Exemplo de como exibir especificações. Idealmente, viriam do BD.
+                        $specs = json_decode($produto['especificacoes_json'], true);
+                        if ($specs) {
+                            foreach ($specs as $key => $value) {
+                                echo '<tr><td>' . htmlspecialchars($key) . '</td><td>' . htmlspecialchars($value) . '</td></tr>';
+                            }
+                        } else {
+                            echo '<tr><td colspan="2">Nenhuma especificação disponível.</td></tr>';
+                        }
+                        ?>
+                    </tbody>
                 </table>
             </div>
+        </div>
 
-            <div class="tab-content" id="reviews">
-                <div class="reviews-section">
-                    <div class="reviews-summary">
-                        <div class="rating-overview">
-                            <div class="rating-number"><?php echo $produto['avaliacao_media']; ?></div>
-                            <div class="stars">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <span class="star <?php echo $i <= floor($produto['avaliacao_media']) ? '' : 'empty'; ?>">★</span>
-                                <?php endfor; ?>
-                            </div>
-                            <div style="color: var(--text-muted); margin-top: var(--spacing-sm);">
-                                <?php echo $produto['total_avaliacoes']; ?> avaliações
-                            </div>
-                        </div>
-                        
-                        <div class="rating-bars">
-                            <div class="rating-bar">
-                                <span class="bar-label">5 estrelas</span>
-                                <div class="bar-fill">
-                                    <div class="bar-progress" style="width: 78%"></div>
-                                </div>
-                                <span class="bar-count">972</span>
-                            </div>
-                            <div class="rating-bar">
-                                <span class="bar-label">4 estrelas</span>
-                                <div class="bar-fill">
-                                    <div class="bar-progress" style="width: 15%"></div>
-                                </div>
-                                <span class="bar-count">187</span>
-                            </div>
-                            <div class="rating-bar">
-                                <span class="bar-label">3 estrelas</span>
-                                <div class="bar-fill">
-                                    <div class="bar-progress" style="width: 5%"></div>
-                                </div>
-                                <span class="bar-count">62</span>
-                            </div>
-                            <div class="rating-bar">
-                                <span class="bar-label">2 estrelas</span>
-                                <div class="bar-fill">
-                                    <div class="bar-progress" style="width: 1%"></div>
-                                </div>
-                                <span class="bar-count">15</span>
-                            </div>
-                            <div class="rating-bar">
-                                <span class="bar-label">1 estrela</span>
-                                <div class="bar-fill">
-                                    <div class="bar-progress" style="width: 1%"></div>
-                                </div>
-                                <span class="bar-count">11</span>
-                            </div>
+        <div class="reviews-section">
+            <h2 class="section-title">⭐ Avaliações de Clientes</h2>
+
+            <?php if (!empty($avaliacao_sucesso)): ?>
+                <div class="alert alert-success">
+                    <strong>✅ <?php echo htmlspecialchars($avaliacao_sucesso); ?></strong>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($avaliacao_erro)): ?>
+                <div class="alert alert-error">
+                    <strong>❌ <?php echo htmlspecialchars($avaliacao_erro); ?></strong>
+                </div>
+            <?php endif; ?>
+
+            <div class="review-form-section">
+                <h3 class="section-title" style="font-size: 1.5rem;">Deixe sua Avaliação</h3>
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="nota" class="form-label">Sua Nota:</label>
+                        <div class="rating-input">
+                            <input type="radio" id="star5" name="nota" value="5"><label for="star5">★</label>
+                            <input type="radio" id="star4" name="nota" value="4"><label for="star4">★</label>
+                            <input type="radio" id="star3" name="nota" value="3"><label for="star3">★</label>
+                            <input type="radio" id="star2" name="nota" value="2"><label for="star2">★</label>
+                            <input type="radio" id="star1" name="nota" value="1"><label for="star1">★</label>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="comentario" class="form-label">Seu Comentário:</label>
+                        <textarea id="comentario" name="comentario" class="form-textarea" rows="5" placeholder="Escreva sua avaliação aqui..."></textarea>
+                    </div>
+                    <button type="submit" name="enviar_avaliacao" class="btn-submit">
+                        <span>⭐</span> Enviar Avaliação
+                    </button>
+                </form>
+            </div>
 
+            <?php if (empty($avaliacoes)): ?>
+                <p style="color: var(--text-muted); text-align: center; margin-top: var(--spacing-xl);">Ainda não há avaliações para este produto. Seja o primeiro a avaliar!</p>
+            <?php else: ?>
+                <div class="review-list">
                     <?php foreach ($avaliacoes as $avaliacao): ?>
-                        <div class="review-item">
+                        <div class="review-card">
                             <div class="review-header">
-                                <div class="review-user">
-                                    <span class="user-name"><?php echo htmlspecialchars($avaliacao['usuario']); ?></span>
-                                    <span class="review-date"><?php echo date('d/m/Y', strtotime($avaliacao['data'])); ?></span>
-                                </div>
-                                <?php if ($avaliacao['verificado']): ?>
-                                    <span class="verified-badge">✓ Compra Verificada</span>
-                                <?php endif; ?>
+                                <span class="reviewer-name"><?php echo htmlspecialchars($avaliacao['usuario_nome']); ?></span>
+                                <span class="review-date"><?php echo date('d/m/Y', strtotime($avaliacao['data_avaliacao'])); ?></span>
                             </div>
-                            
-                            <div class="stars" style="margin-bottom: var(--spacing-sm);">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <span class="star <?php echo $i <= $avaliacao['nota'] ? '' : 'empty'; ?>">★</span>
-                                <?php endfor; ?>
+                            <div class="review-stars">
+                                <?php for ($i = 0; $i < $avaliacao['nota']; $i++) echo '★'; ?>
+                                <?php for ($i = 0; $i < (5 - $avaliacao['nota']); $i++) echo '☆'; ?>
                             </div>
-                            
-                            <h4 class="review-title"><?php echo htmlspecialchars($avaliacao['titulo']); ?></h4>
-                            <p class="review-comment"><?php echo htmlspecialchars($avaliacao['comentario']); ?></p>
-                            
-                            <div class="review-actions">
-                                <button class="helpful-btn">
-                                    👍 Útil (<?php echo $avaliacao['util']; ?>)
-                                </button>
-                                <button class="helpful-btn">
-                                    💬 Responder
-                                </button>
-                            </div>
+                            <p class="review-comment"><?php echo nl2br(htmlspecialchars($avaliacao['comentario'])); ?></p>
                         </div>
                     <?php endforeach; ?>
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($produtos_relacionados)): ?>
-            <div class="related-products">
-                <h2 class="related-title">Produtos Relacionados</h2>
-                <div class="related-grid">
-                    <?php foreach (array_slice($produtos_relacionados, 0, 3) as $relacionado): ?>
+            <div class="related-products-section">
+                <h2 class="section-title">Você Também Pode Gostar</h2>
+                <div class="related-products-grid products-grid">
+                    <?php foreach ($produtos_relacionados as $produto_rel): ?>
                         <div class="product-card">
                             <div class="product-image">
-                                <span>Imagem do Produto</span>
+                                <?php if (!empty($produto_rel['imagem_url'])): ?>
+                                    <img src="<?php echo htmlspecialchars($produto_rel['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto_rel['nome']); ?>">
+                                <?php else: ?>
+                                    <span>Imagem do Produto</span>
+                                <?php endif; ?>
                             </div>
-                            <div class="product-category"><?php echo htmlspecialchars($relacionado['categoria']); ?></div>
-                            <h3 class="product-title"><?php echo htmlspecialchars($relacionado['nome']); ?></h3>
-                            <div class="product-price">R$ <?php echo number_format($relacionado['preco'], 2, ',', '.'); ?></div>
-                            <p class="product-description"><?php echo htmlspecialchars(substr($relacionado['descricao_curta'], 0, 100)) . '...'; ?></p>
-                            <a href="produto_new.php?id=<?php echo $relacionado['id']; ?>" class="btn btn-primary">Ver Detalhes</a>
+                            <div class="product-category"><?php echo htmlspecialchars($produto_rel['categoria_nome']); ?></div>
+                            <h3 class="product-title"><?php echo htmlspecialchars($produto_rel['nome']); ?></h3>
+                            <div class="product-price">R$ <?php echo number_format($produto_rel['preco'], 2, ',', '.'); ?></div>
+                            <p class="product-description"><?php echo htmlspecialchars($produto_rel['descricao_curta']); ?></p>
+                            <a href="produto.php?id=<?php echo $produto_rel['id']; ?>" class="btn btn-primary">
+                                Ver Detalhes
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -1035,62 +621,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_carrinho'])
         </div>
     </footer>
 
+    <!-- Chatbot -->
+    <div class="chatbot-container">
+        <button class="chatbot-toggle">💬</button>
+        <div class="chatbot-window">
+            <div class="chatbot-header">
+                <h4>🤖 Assistente Virtual</h4>
+                <button class="chatbot-close">×</button>
+            </div>
+            <div class="chatbot-messages">
+                <div style="color: #ffffff; margin-bottom: 1rem;">
+                    Olá! 👋 Posso ajudar com informações sobre este produto. Como posso ajudar?
+                </div>
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" class="chatbot-input" placeholder="Digite sua mensagem...">
+                <button class="chatbot-send">➤</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function switchTab(tabName) {
-            // Remover classe active de todos os botões e conteúdos
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Adicionar classe active ao botão e conteúdo selecionados
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+        function changeMainImage(thumbnail) {
+            document.getElementById('mainProductImage').src = thumbnail.src;
+            document.querySelectorAll('.thumbnail').forEach(img => img.classList.remove('active'));
+            thumbnail.classList.add('active');
         }
-        
+
         function changeQuantity(change) {
-            const input = document.getElementById('quantity');
-            const currentValue = parseInt(input.value);
-            const newValue = currentValue + change;
-            const max = parseInt(input.max);
-            
-            if (newValue >= 1 && newValue <= max) {
-                input.value = newValue;
+            const quantityInput = document.getElementById('quantity');
+            let currentQuantity = parseInt(quantityInput.value);
+            let newQuantity = currentQuantity + change;
+            const maxQuantity = parseInt(quantityInput.max);
+
+            if (newQuantity < 1) {
+                newQuantity = 1;
+            } else if (newQuantity > maxQuantity) {
+                newQuantity = maxQuantity;
             }
+            quantityInput.value = newQuantity;
         }
-        
-        // Efeito de troca de imagens nas thumbnails
-        document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
-            thumb.addEventListener('click', function() {
-                document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Aqui você adicionaria a lógica para trocar a imagem principal
-                const mainImage = document.querySelector('.main-image');
-                mainImage.innerHTML = `<span>Imagem ${index + 1} do Produto</span>`;
+
+        function addToCart(productId) {
+            const quantity = document.getElementById('quantity').value;
+            // Aqui você faria uma requisição AJAX para adicionar ao carrinho
+            alert(`Produto ${productId} adicionado ao carrinho com quantidade ${quantity}`);
+            // Atualizar o contador do carrinho no header (simulado)
+            const cartIcon = document.querySelector('.cart-icon');
+            let currentCartCount = parseInt(cartIcon.textContent.match(/\((\d+)\)/)[1]);
+            cartIcon.textContent = `🛒 Carrinho (${currentCartCount + parseInt(quantity)})`;
+        }
+
+        // Animação de entrada dos elementos
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                    observer.unobserve(entry.target);
+                }
             });
-        });
+        }, { threshold: 0.1 });
         
-        // Animação de scroll suave para as avaliações
-        document.querySelector('a[href="#reviews"]')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelector('#reviews').scrollIntoView({
-                behavior: 'smooth'
-            });
-            switchTab('reviews');
-        });
-        
-        // Validação da quantidade
-        document.getElementById('quantity').addEventListener('input', function() {
-            const value = parseInt(this.value);
-            const max = parseInt(this.max);
-            
-            if (value > max) {
-                this.value = max;
-            } else if (value < 1) {
-                this.value = 1;
-            }
+        document.querySelectorAll('.product-detail-grid > div, .product-full-description-section, .reviews-section, .related-products-section').forEach((el, index) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.animationDelay = `${index * 0.2}s`;
+            observer.observe(el);
         });
     </script>
-    
     <script src="animations.js"></script>
 </body>
 </html>
