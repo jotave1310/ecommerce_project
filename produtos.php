@@ -38,7 +38,7 @@ if (!isset($_SESSION['cart'])) {
 
     <main>
         <div class="container">
-            <h1 style="color: #2c3e50; margin-bottom: 2rem;">Todos os Produtos</h1>
+            <h1>Catálogo de Produtos</h1>
 
             <div class="products-grid">
                 <?php
@@ -46,15 +46,15 @@ if (!isset($_SESSION['cart'])) {
                 $todosProdutos = obterTodosProdutos();
                 
                 foreach ($todosProdutos as $produto): ?>
-                    <div class="produto">
-                        <div class="produto-imagem">
+                    <div class="product-card">
+                        <div class="product-image">
                             <div class="placeholder-imagem">Imagem do Produto</div>
                         </div>
+                        <div class="product-category"><?php echo htmlspecialchars($produto['categoria']); ?></div>
                         <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
-                        <p class="categoria"><?php echo htmlspecialchars($produto['categoria']); ?></p>
-                        <p class="preco"><?php echo formatarPreco($produto['preco']); ?></p>
-                        <p class="descricao"><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                        <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn">Ver Detalhes</a>
+                        <p class="product-price"><?php echo formatarPreco($produto['preco']); ?></p>
+                        <p class="product-description"><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                        <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn btn-primary">Ver Detalhes</a>
                     </div>
                 <?php endforeach; ?>
             </div>

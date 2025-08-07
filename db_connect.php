@@ -83,8 +83,9 @@ function obterProdutosDestaque($limite = 4) {
     try {
         $stmt = $pdo->prepare("SELECT p.*, c.nome as categoria_nome FROM produtos p 
                               LEFT JOIN categorias c ON p.categoria_id = c.id 
-                              ORDER BY p.id LIMIT ?");
-        $stmt->execute([$limite]);
+                              ORDER BY p.id LIMIT :limite");
+        $stmt->bindValue(':limite', (int)$limite, PDO::PARAM_INT);
+        $stmt->execute();
         $produtos = $stmt->fetchAll();
         
         // Manter compatibilidade com o código existente
@@ -193,6 +194,40 @@ function obterCategorias() {
     } catch (PDOException $e) {
         error_log("Erro ao obter categorias: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Função para adicionar um novo produto
+ */
+function adicionarProduto($nome, $categoria, $preco, $descricao) {
+    global $pdo;
+    
+    try {
+        // Verificar se a categoria existe, se não, criar
+        $stmt = $pdo->prepare("SELECT id FROM categorias WHERE nome = ?");
+        $stmt->execute([$categoria]);
+        $categoriaExistente = $stmt->fetch();
+        
+        if (!$categoriaExistente) {
+            // Criar nova categoria
+            $stmt = $pdo->prepare("INSERT INTO categorias (nome, descricao) VALUES (?, ?)");
+            $stmt->execute([$categoria, "Categoria: " . $categoria]);
+            $categoriaId = $pdo->lastInsertId();
+        } else {
+            $categoriaId = $categoriaExistente['id'];
+        }
+        
+        // Inserir o produto
+        $stmt = $pdo->prepare("INSERT INTO produtos (nome, categoria_id, preco, descricao, estoque, ativo) 
+                              VALUES (?, ?, ?, ?, 100, 1)");
+        $stmt->execute([$nome, $categoriaId, $preco, $descricao]);
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao adicionar produto: " . $e->getMessage());
+        return false;
     }
 }
 ?>

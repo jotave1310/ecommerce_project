@@ -11,9 +11,38 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Sistema de autenticação de usuários
 - Integração com gateway de pagamento
 - Sistema de avaliações de produtos
-- Painel administrativo
 - API REST para mobile
 - Sistema de cupons de desconto
+
+## [2.0.0] - 2025-08-07
+
+### Adicionado
+- **Novo Design de Tecnologia**: Tema escuro moderno com paleta azul/vermelho, efeitos glassmorphism e animações suaves.
+- **Painel Administrativo (admin.php)**: Interface completa para cadastro e gerenciamento de produtos.
+- **Chatbot Virtual Inteligente**: Assistente automatizado com respostas contextuais sobre produtos, compras, pagamento e suporte.
+- **Sistema de Categorias Dinâmicas**: Categorização automática de produtos com criação de novas categorias.
+- **Interface Responsiva Avançada**: Layout otimizado para desktop, tablet e mobile com micro-interações.
+
+### Alterado
+- **Design Completo**: Repaginação total do frontend com tema de tecnologia.
+- **Tipografia**: Implementação de fontes modernas (Montserrat + Lato).
+- **Navegação**: Menu aprimorado com efeitos visuais e animações.
+- **Cards de Produtos**: Redesign completo com gradientes e hover effects.
+- **Formulários**: Estilização moderna com validação visual.
+
+### Melhorado
+- **Experiência do Usuário**: Interface mais intuitiva e interativa.
+- **Performance**: Otimizações de CSS e JavaScript.
+- **Acessibilidade**: Melhor contraste e navegação por teclado.
+- **Responsividade**: Breakpoints otimizados para todos os dispositivos.
+- **Feedback Visual**: Animações e transições suaves em toda a interface.
+
+### Técnico
+- **Arquitetura**: Separação clara entre apresentação e lógica de negócio.
+- **Banco de Dados**: Função `adicionarProduto()` para inserção dinâmica.
+- **JavaScript**: Implementação de AJAX para comunicação com chatbot.
+- **CSS**: Uso avançado de CSS3 com gradientes, backdrop-filter e animações.
+- **PHP**: Melhorias na estrutura de funções e tratamento de erros.
 
 ## [1.1.1] - 2025-08-06
 
