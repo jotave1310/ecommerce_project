@@ -323,7 +323,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ---
 
-**Desenvolvido por**: Manus AI  
+**Desenvolvido por**: Dexo  
 **Última atualização**: 07 de Agosto de 2025  
 **Versão**: 2.0.0
 
