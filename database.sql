@@ -21,7 +21,7 @@ CREATE TABLE produtos (
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
 );
 
--- Tabela de Usuários
+-- Tabela de Usuários (Atualizada para sistema de login)
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
@@ -31,7 +31,12 @@ CREATE TABLE usuarios (
     endereco VARCHAR(255),
     cidade VARCHAR(100),
     cep VARCHAR(10),
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ultimo_login TIMESTAMP NULL,
+    ativo BOOLEAN DEFAULT TRUE,
+    tipo_usuario ENUM('cliente', 'admin') DEFAULT 'cliente',
+    INDEX idx_email (email),
+    INDEX idx_ativo (ativo)
 );
 
 -- Tabela de Pedidos

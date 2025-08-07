@@ -232,3 +232,277 @@ function adicionarProduto($nome, $categoria, $preco, $descricao) {
 }
 ?>
 
+
+/**
+ * Função para autenticar usuário
+ */
+function autenticarUsuario($email, $senha) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ? AND ativo = 1");
+        $stmt->execute([$email]);
+        $usuario = $stmt->fetch();
+        
+        if ($usuario && password_verify($senha, $usuario['senha'])) {
+            return $usuario;
+        }
+        
+        return false;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao autenticar usuário: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para criar novo usuário
+ */
+function criarUsuario($nome, $email, $senha, $telefone = null) {
+    global $pdo;
+    
+    try {
+        $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+        
+        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, telefone, data_registro) 
+                              VALUES (?, ?, ?, ?, NOW())");
+        $stmt->execute([$nome, $email, $senhaHash, $telefone]);
+        
+        return $pdo->lastInsertId();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao criar usuário: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para verificar se email já existe
+ */
+function verificarEmailExiste($email) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch() !== false;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao verificar email: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para atualizar último login
+ */
+function atualizarUltimoLogin($usuarioId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?");
+        $stmt->execute([$usuarioId]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao atualizar último login: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para obter dados do usuário
+ */
+function obterUsuario($usuarioId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT id, nome, email, telefone, endereco, cidade, cep, 
+                              data_registro, ultimo_login, tipo_usuario 
+                              FROM usuarios WHERE id = ? AND ativo = 1");
+        $stmt->execute([$usuarioId]);
+        return $stmt->fetch();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter usuário: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para atualizar perfil do usuário
+ */
+function atualizarPerfilUsuario($usuarioId, $nome, $telefone, $endereco, $cidade, $cep) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE usuarios SET nome = ?, telefone = ?, endereco = ?, 
+                              cidade = ?, cep = ? WHERE id = ?");
+        $stmt->execute([$nome, $telefone, $endereco, $cidade, $cep, $usuarioId]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao atualizar perfil: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para alterar senha do usuário
+ */
+function alterarSenhaUsuario($usuarioId, $senhaAtual, $novaSenha) {
+    global $pdo;
+    
+    try {
+        // Verificar senha atual
+        $stmt = $pdo->prepare("SELECT senha FROM usuarios WHERE id = ?");
+        $stmt->execute([$usuarioId]);
+        $usuario = $stmt->fetch();
+        
+        if (!$usuario || !password_verify($senhaAtual, $usuario['senha'])) {
+            return false;
+        }
+        
+        // Atualizar senha
+        $novaSenhaHash = password_hash($novaSenha, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE usuarios SET senha = ? WHERE id = ?");
+        $stmt->execute([$novaSenhaHash, $usuarioId]);
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao alterar senha: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para obter estatísticas de usuários (admin)
+ */
+function obterEstatisticasUsuarios() {
+    global $pdo;
+    
+    try {
+        $stats = [];
+        
+        // Total de usuários
+        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1");
+        $stmt->execute();
+        $stats['total_usuarios'] = $stmt->fetch()['total'];
+        
+        // Usuários registrados hoje
+        $stmt = $pdo->prepare("SELECT COUNT(*) as hoje FROM usuarios 
+                              WHERE DATE(data_registro) = CURDATE() AND ativo = 1");
+        $stmt->execute();
+        $stats['usuarios_hoje'] = $stmt->fetch()['hoje'];
+        
+        // Usuários ativos (logaram nos últimos 30 dias)
+        $stmt = $pdo->prepare("SELECT COUNT(*) as ativos FROM usuarios 
+                              WHERE ultimo_login >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND ativo = 1");
+        $stmt->execute();
+        $stats['usuarios_ativos'] = $stmt->fetch()['ativos'];
+        
+        return $stats;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter estatísticas: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para verificar se usuário é admin
+ */
+function verificarAdmin($usuarioId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT tipo_usuario FROM usuarios WHERE id = ? AND ativo = 1");
+        $stmt->execute([$usuarioId]);
+        $usuario = $stmt->fetch();
+        
+        return $usuario && $usuario['tipo_usuario'] === 'admin';
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao verificar admin: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para listar todos os usuários (admin)
+ */
+function listarUsuarios($limite = 50, $offset = 0) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT id, nome, email, telefone, data_registro, ultimo_login, 
+                              tipo_usuario, ativo FROM usuarios 
+                              ORDER BY data_registro DESC LIMIT ? OFFSET ?");
+        $stmt->execute([$limite, $offset]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao listar usuários: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Função para desativar usuário (admin)
+ */
+function desativarUsuario($usuarioId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE usuarios SET ativo = 0 WHERE id = ?");
+        $stmt->execute([$usuarioId]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao desativar usuário: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Função para reativar usuário (admin)
+ */
+function reativarUsuario($usuarioId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE usuarios SET ativo = 1 WHERE id = ?");
+        $stmt->execute([$usuarioId]);
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao reativar usuário: " . $e->getMessage());
+        return false;
+    }
+}
+
+
+
+/**
+ * Função para obter pedidos do usuário
+ */
+function obterPedidosUsuario($usuarioId, $limite = 20) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM pedidos WHERE usuario_id = ? 
+                              ORDER BY data_pedido DESC LIMIT ?");
+        $stmt->execute([$usuarioId, $limite]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter pedidos do usuário: " . $e->getMessage());
+        return [];
+    }
+}
+
+
+?>
+

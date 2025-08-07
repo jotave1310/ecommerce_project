@@ -27,6 +27,15 @@ if (!isset($_SESSION['cart'])) {
                         <li><a href="produtos.php">Produtos</a></li>
                         <li><a href="sobre.php">Sobre</a></li>
                         <li><a href="contato.php">Contato</a></li>
+                        <?php if (isset($_SESSION['usuario_id'])): ?>
+                            <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
+                                <li><a href="admin.php">Admin</a></li>
+                            <?php endif; ?>
+                            <li><a href="logout.php">Sair</a></li>
+                        <?php else: ?>
+                            <li><a href="login.php">Login</a></li>
+                        <?php endif; ?>
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
@@ -190,6 +199,9 @@ if (!isset($_SESSION['cart'])) {
             messages.scrollTop = messages.scrollHeight;
         }
     </script>
+    
+    <!-- Animações e Interatividade -->
+    <script src="animations.js"></script>
 </body>
 </html>
 
