@@ -1,6 +1,6 @@
 # E-commerce Project
 
-Um projeto de loja online desenvolvido em PHP, HTML e CSS como demonstração de desenvolvimento web completo.
+Um projeto de loja online desenvolvido em PHP, HTML, CSS e MySQL como demonstração de desenvolvimento web completo.
 
 ## 📋 Índice
 
@@ -30,6 +30,8 @@ O **E-commerce Project** é uma aplicação web completa que simula uma loja onl
 
 ### Backend
 - **PHP 8.1+**: Linguagem principal para lógica server-side
+- **MySQL 8.0+**: Sistema de gerenciamento de banco de dados relacional
+- **PDO**: Extensão PHP para acesso a banco de dados
 - **Sessões PHP**: Gerenciamento de estado do carrinho de compras
 - **Apache**: Servidor web para hospedagem
 
@@ -41,14 +43,14 @@ O **E-commerce Project** é uma aplicação web completa que simula uma loja onl
 ### Ferramentas de Desenvolvimento
 - **Git**: Controle de versão
 - **GitHub**: Repositório remoto e colaboração
-- **Apache/PHP**: Ambiente de desenvolvimento local
+- **Apache/PHP/MySQL**: Ambiente de desenvolvimento local
 
 ## ✨ Funcionalidades
 
 ### 🛍️ Catálogo de Produtos
-- Exibição de produtos em grid responsivo
-- Detalhes completos de cada produto
-- Categorização por tipo de produto
+- Exibição de produtos em grid responsivo (dados do MySQL)
+- Detalhes completos de cada produto (dados do MySQL)
+- Categorização por tipo de produto (dados do MySQL)
 - Preços formatados em moeda brasileira
 
 ### 🛒 Carrinho de Compras
@@ -62,6 +64,7 @@ O **E-commerce Project** é uma aplicação web completa que simula uma loja onl
 - Validação de campos obrigatórios
 - Resumo do pedido
 - Confirmação de compra
+- **Persistência de pedidos no banco de dados MySQL**
 
 ### 📱 Design Responsivo
 - Layout adaptável para desktop e mobile
@@ -73,12 +76,14 @@ O **E-commerce Project** é uma aplicação web completa que simula uma loja onl
 - Separação de configurações
 - Código limpo e documentado
 - Tratamento de erros
+- **Conexão e interação com banco de dados MySQL**
 
 ## 🔧 Instalação e Configuração
 
 ### Pré-requisitos
 
 - PHP 8.1 ou superior
+- MySQL 8.0 ou superior
 - Apache ou Nginx
 - Git
 
@@ -90,21 +95,40 @@ O **E-commerce Project** é uma aplicação web completa que simula uma loja onl
    cd ecommerce_project
    ```
 
-2. **Configure o servidor web**
+2. **Configure o servidor web e PHP**
    
-   Para Apache, certifique-se de que o módulo PHP está habilitado:
+   Para Apache, certifique-se de que o módulo PHP e `php-mysql` estão habilitados:
    ```bash
+   sudo apt update
+   sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
    sudo a2enmod php8.1
    sudo systemctl restart apache2
    ```
 
-3. **Configure as permissões**
+3. **Configure o MySQL**
+   
+   Crie o banco de dados, usuário e conceda permissões:
+   ```bash
+   sudo service mysql start
+   sudo mysql -e "CREATE DATABASE ecommerce_db;"
+   sudo mysql -e "CREATE USER 'ecommerce_user'@'localhost' IDENTIFIED BY 'password';"
+   sudo mysql -e "GRANT ALL PRIVILEGES ON ecommerce_db.* TO 'ecommerce_user'@'localhost';"
+   sudo mysql -e "FLUSH PRIVILEGES;"
+   ```
+   **Nota**: Altere a senha `password` para uma senha forte em um ambiente de produção.
+
+4. **Importe o esquema e dados iniciais do banco de dados**
+   ```bash
+   sudo mysql ecommerce_db < database.sql
+   ```
+
+5. **Configure as permissões do projeto**
    ```bash
    sudo chown -R www-data:www-data /var/www/html/ecommerce_project
    sudo chmod -R 755 /var/www/html/ecommerce_project
    ```
 
-4. **Acesse a aplicação**
+6. **Acesse a aplicação**
    
    Abra o navegador e acesse: `http://localhost/ecommerce_project/`
 
@@ -124,7 +148,9 @@ Então acesse: `http://localhost:8000`
 ```
 ecommerce_project/
 ├── index.php              # Página inicial
-├── config.php             # Configurações e dados dos produtos
+├── config.php             # Configurações gerais do site
+├── db_connect.php         # Conexão com o banco de dados e funções de interação
+├── database.sql           # Script SQL para criação do DB e dados iniciais
 ├── style.css              # Estilos CSS principais
 ├── produto.php             # Página de detalhes do produto
 ├── produtos.php            # Listagem de todos os produtos
@@ -134,19 +160,32 @@ ecommerce_project/
 ├── sobre.php               # Página institucional
 ├── contato.php             # Página de contato
 ├── README.md               # Documentação principal
+├── teste_resultados.md     # Relatório de testes
 └── docs/                   # Documentação adicional
     ├── INSTALL.md          # Guia de instalação detalhado
     ├── API.md              # Documentação das funções
-    └── CHANGELOG.md        # Histórico de versões
+    ├── CHANGELOG.md        # Histórico de versões
+    └── DATABASE_SCHEMA.md  # Esquema do banco de dados
 ```
 
 ### Descrição dos Arquivos Principais
 
 #### `config.php`
 Arquivo central de configuração contendo:
-- Array de produtos com informações completas
-- Funções auxiliares para manipulação de dados
-- Configurações globais da aplicação
+- Definições de constantes como nome e URL do site.
+- Inicialização da sessão PHP.
+- **Agora inclui `db_connect.php` para todas as interações com o banco de dados.**
+
+#### `db_connect.php`
+Novo arquivo responsável por:
+- Estabelecer a conexão PDO com o banco de dados MySQL.
+- Fornecer funções para interagir com o banco de dados (ex: `obterProduto`, `obterTodosProdutos`, `salvarPedido`).
+
+#### `database.sql`
+Contém os comandos SQL para:
+- Criar o banco de dados `ecommerce_db`.
+- Criar as tabelas `categorias`, `produtos`, `usuarios`, `pedidos` e `itens_pedido`.
+- Popular as tabelas com dados iniciais de exemplo.
 
 #### `style.css`
 Folha de estilos principal com:
@@ -158,8 +197,8 @@ Folha de estilos principal com:
 #### Páginas PHP
 Cada página PHP segue a estrutura:
 - Inicialização de sessão
-- Inclusão do arquivo de configuração
-- Lógica de processamento
+- Inclusão do arquivo de configuração (`config.php`)
+- Lógica de processamento (agora interagindo com o banco de dados via `db_connect.php`)
 - Template HTML com dados dinâmicos
 
 ## 🎮 Como Usar
@@ -175,16 +214,13 @@ Cada página PHP segue a estrutura:
 
 #### Adicionando Novos Produtos
 
-Edite o arquivo `config.php` e adicione um novo item ao array `$produtos`:
+Agora, os produtos são gerenciados diretamente no banco de dados MySQL. Para adicionar novos produtos, você precisará inserir registros na tabela `produtos` do banco de dados `ecommerce_db`.
 
-```php
-$produtos[7] = [
-    'id' => 7,
-    'nome' => 'Novo Produto',
-    'preco' => 299.99,
-    'descricao' => 'Descrição do produto',
-    'categoria' => 'Categoria'
-];
+Exemplo de inserção via SQL:
+
+```sql
+INSERT INTO produtos (nome, descricao, preco, estoque, categoria_id, imagem_url) VALUES
+("Novo Produto Incrível", "Uma descrição detalhada do seu novo produto.", 123.45, 100, 1, "");
 ```
 
 #### Modificando Estilos
@@ -199,10 +235,12 @@ Os estilos estão organizados em seções no arquivo `style.css`:
 
 #### Personalizando Funcionalidades
 
-As principais funções estão em `config.php`:
-- `obterProduto($id)`: Busca produto por ID
-- `calcularTotalCarrinho($carrinho)`: Calcula total do carrinho
+As principais funções de interação com o banco de dados estão em `db_connect.php`:
+- `obterProduto($id)`: Busca produto por ID no DB
+- `obterTodosProdutos()`: Retorna todos os produtos do DB
+- `calcularTotalCarrinho($carrinho)`: Calcula total do carrinho (buscando preços do DB)
 - `formatarPreco($preco)`: Formata valores monetários
+- `salvarPedido($dadosCliente, $carrinho, $total)`: Salva o pedido e seus itens no DB
 
 ## 🤝 Contribuição
 
@@ -233,5 +271,5 @@ Este projeto é desenvolvido para fins educacionais e de demonstração. Sinta-s
 
 ---
 
-**Desenvolvido com ❤️ para demonstrar conhecimentos em desenvolvimento web**
+**Desenvolvido com ❤️ para demonstrar conhecimentos em desenvolvimento web | Dexo**
 

@@ -38,6 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finalizar_compra'])) 
             // Calcular total
             $total = calcularTotalCarrinho($_SESSION['cart']);
             
+            $dadosCliente = [
+                'nome' => $nome,
+                'email' => $email,
+                'telefone' => $telefone,
+                'endereco' => $endereco,
+                'cidade' => $cidade,
+                'cep' => $cep
+            ];
+            
             // Salvar pedido no banco de dados
             $pedidoId = salvarPedido($dadosCliente, $_SESSION['cart'], $total);
             

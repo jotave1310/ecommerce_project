@@ -15,6 +15,32 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - API REST para mobile
 - Sistema de cupons de desconto
 
+## [1.1.1] - 2025-08-06
+
+### Corrigido
+- Warning: Undefined variable $dadosCliente em `checkout.php`.
+- Warnings: Trying to access array offset on value of type null em `db_connect.php`.
+- Fluxo de finalização de compra para garantir a persistência correta dos pedidos no banco de dados.
+
+## [1.1.0] - 2025-08-06
+
+### Adicionado
+- Integração completa com banco de dados MySQL para produtos, categorias e pedidos.
+- Persistência de pedidos no banco de dados.
+- Arquivo `db_connect.php` para gerenciamento da conexão e funções de interação com o DB.
+- Script `database.sql` para criação do esquema do DB e população inicial de dados.
+- Documentação do esquema do banco de dados (`DATABASE_SCHEMA.md`).
+
+### Alterado
+- `config.php` refatorado para usar o banco de dados e remover o array de produtos estático.
+- Páginas `index.php`, `produtos.php` e `produto.php` atualizadas para buscar dados do MySQL.
+- `checkout.php` adaptado para salvar pedidos no banco de dados.
+- Rodapé de todas as páginas atualizado com a menção "| Dexo".
+
+### Melhorado
+- Estrutura de dados e funções para interação com o banco de dados.
+- Modularidade do código com a separação da lógica de DB.
+
 ## [1.0.0] - 2025-08-06
 
 ### Adicionado
@@ -182,13 +208,13 @@ refactor: extract product functions to separate config file
 
 ## Roadmap Futuro
 
-### Versão 1.1.0 (Planejado)
+### Versão 1.2.0 (Planejado)
 - Sistema de busca de produtos
 - Filtros por categoria e preço
 - Paginação de produtos
 - Melhorias na interface
 
-### Versão 1.2.0 (Planejado)
+### Versão 1.3.0 (Planejado)
 - Sistema de usuários e login
 - Histórico de pedidos
 - Perfil do usuário
@@ -212,7 +238,7 @@ Para contribuir com o projeto:
 
 1. Faça um fork do repositório
 2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
-3. Commit suas mudanças (`git commit -am 'feat: add nova funcionalidade'`)
+3. Commit suas mudanças (`git commit -am "feat: add nova funcionalidade"`)
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Crie um Pull Request
 
@@ -234,4 +260,6 @@ Para contribuir com o projeto:
 
 **Mantido por**: Manus AI  
 **Última atualização**: 06 de Agosto de 2025
+
+
 

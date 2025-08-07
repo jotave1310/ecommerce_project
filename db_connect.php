@@ -150,12 +150,12 @@ function salvarPedido($dadosCliente, $carrinho, $total) {
         // Inserir pedido
         $stmt = $pdo->prepare("INSERT INTO pedidos (usuario_id, status, total, endereco_entrega, cidade_entrega, cep_entrega) 
                               VALUES (NULL, 'Pendente', ?, ?, ?, ?)");
-        $stmt->execute([
-            $total,
-            $dadosCliente['endereco'],
-            $dadosCliente['cidade'],
-            $dadosCliente['cep']
-        ]);
+            $stmt->execute([
+                $total,
+                $dadosCliente["endereco"] ?? null,
+                $dadosCliente["cidade"] ?? null,
+                $dadosCliente["cep"] ?? null
+            ]);
         
         $pedidoId = $pdo->lastInsertId();
         
