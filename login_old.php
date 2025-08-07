@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once 'config.php';
+require_once 'db_connect.php';
 
 // Redirecionar se já estiver logado
 if (isset($_SESSION['usuario_id'])) {
@@ -18,22 +20,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     if (empty($email) || empty($senha)) {
         $erro = 'Por favor, preencha todos os campos.';
     } else {
-        // Simulação de autenticação (em produção, usar banco de dados real)
-        if ($email === 'admin@teste.com' && $senha === '123456') {
-            $_SESSION['usuario_id'] = 1;
-            $_SESSION['usuario_nome'] = 'Administrador';
-            $_SESSION['usuario_email'] = $email;
-            $_SESSION['usuario_tipo'] = 'admin';
+        $usuario = autenticarUsuario($email, $senha);
+        if ($usuario) {
+            $_SESSION['usuario_id'] = $usuario['id'];
+            $_SESSION['usuario_nome'] = $usuario['nome'];
+            $_SESSION['usuario_email'] = $usuario['email'];
+            $_SESSION['usuario_tipo'] = $usuario['tipo_usuario'];
             
-            header('Location: admin_new.php');
-            exit();
-        } elseif ($email === 'user@teste.com' && $senha === '123456') {
-            $_SESSION['usuario_id'] = 2;
-            $_SESSION['usuario_nome'] = 'Usuário Teste';
-            $_SESSION['usuario_email'] = $email;
-            $_SESSION['usuario_tipo'] = 'cliente';
+            // Atualizar último login
+            atualizarUltimoLogin($usuario['id']);
             
-            header('Location: index.php');
+            // Redirecionar baseado no tipo de usuário
+            if ($usuario['tipo_usuario'] == 'admin') {
+                header('Location: admin.php');
+            } else {
+                header('Location: index.php');
+            }
             exit();
         } else {
             $erro = 'Email ou senha incorretos.';
@@ -58,8 +60,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $erro = 'Email inválido.';
     } else {
-        // Simulação de criação de usuário
-        $sucesso = 'Conta criada com sucesso! Use: user@teste.com / 123456 para fazer login.';
+        // Verificar se email já existe
+        if (verificarEmailExiste($email)) {
+            $erro = 'Este email já está cadastrado.';
+        } else {
+            // Criar usuário
+            $usuario_id = criarUsuario($nome, $email, $senha, $telefone);
+            if ($usuario_id) {
+                $sucesso = 'Conta criada com sucesso! Faça login para continuar.';
+            } else {
+                $erro = 'Erro ao criar conta. Tente novamente.';
+            }
+        }
     }
 }
 ?>
@@ -72,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
     <title>Login - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .auth-container {
             min-height: 100vh;
@@ -93,9 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             right: 0;
             bottom: 0;
             background: 
-                radial-gradient(circle at 20% 80%, rgba(233, 69, 96, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(15, 52, 96, 0.08) 0%, transparent 50%);
-            pointer-events: none;
+                radial-gradient(circle at 20% 80%, rgba(233, 69, 96, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(15, 52, 96, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
         }
         
         .auth-card {
@@ -158,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             background: rgba(255, 255, 255, 0.05);
             border-radius: var(--border-radius-full);
             padding: var(--spacing-xs);
-            backdrop-filter: blur(10px);
         }
         
         .auth-tab {
@@ -199,10 +209,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             border: 2px solid var(--glass-border);
             border-radius: var(--border-radius-md);
             background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
             color: var(--text-light);
             font-size: 1rem;
             transition: all var(--transition-normal);
+            backdrop-filter: blur(10px);
         }
         
         .form-input:focus {
@@ -278,6 +288,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             transform: translateY(0);
         }
         
+        .auth-divider {
+            text-align: center;
+            margin: var(--spacing-xl) 0;
+            position: relative;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .auth-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--glass-border);
+        }
+        
+        .auth-divider span {
+            background: var(--dark-bg);
+            padding: 0 var(--spacing-lg);
+        }
+        
         .auth-link {
             text-align: center;
             margin-top: var(--spacing-xl);
@@ -310,13 +343,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             align-items: center;
             gap: var(--spacing-sm);
             font-size: 0.9rem;
-            z-index: 10;
         }
         
         .back-to-site:hover {
             background: rgba(255, 255, 255, 0.1);
             transform: translateX(-5px);
-            box-shadow: var(--shadow-md);
         }
         
         .password-toggle {
@@ -334,43 +365,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
         
         .password-toggle:hover {
             color: var(--text-light);
-        }
-        
-        .alert {
-            padding: var(--spacing-lg);
-            border-radius: var(--border-radius-md);
-            margin-bottom: var(--spacing-xl);
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-            border: 1px solid;
-        }
-        
-        .alert-success {
-            background: rgba(40, 167, 69, 0.2);
-            border-color: rgba(40, 167, 69, 0.3);
-            color: #28a745;
-        }
-        
-        .alert-error {
-            background: rgba(220, 53, 69, 0.2);
-            border-color: rgba(220, 53, 69, 0.3);
-            color: #dc3545;
-        }
-        
-        .demo-info {
-            background: rgba(255, 193, 7, 0.2);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            color: #ffc107;
-            padding: var(--spacing-lg);
-            border-radius: var(--border-radius-md);
-            margin-bottom: var(--spacing-xl);
-            backdrop-filter: blur(10px);
-            font-size: 0.9rem;
-        }
-        
-        .demo-info strong {
-            display: block;
-            margin-bottom: var(--spacing-sm);
         }
         
         @keyframes slideInUp {
@@ -397,18 +391,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             .auth-title {
                 font-size: 1.2rem;
             }
-            
-            .back-to-site {
-                position: relative;
-                top: auto;
-                left: auto;
-                margin-bottom: var(--spacing-lg);
-                align-self: flex-start;
-            }
-            
-            .auth-container {
-                padding: var(--spacing-md);
-            }
         }
     </style>
 </head>
@@ -423,12 +405,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
                 <div class="auth-logo">E-commerce Project</div>
                 <h1 class="auth-title">Bem-vindo de volta!</h1>
                 <p class="auth-subtitle">Acesse sua conta ou crie uma nova</p>
-            </div>
-            
-            <div class="demo-info">
-                <strong>🔑 Contas de Demonstração:</strong>
-                Admin: admin@teste.com / 123456<br>
-                Usuário: user@teste.com / 123456
             </div>
             
             <?php if ($erro): ?>
@@ -536,6 +512,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             }
         }
         
+        // Adicionar efeitos de animação aos inputs
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentNode.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentNode.classList.remove('focused');
+                }
+            });
+        });
+        
         // Validação em tempo real
         document.querySelectorAll('input[name="email"]').forEach(input => {
             input.addEventListener('input', function() {
@@ -547,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
             });
         });
         
-        document.querySelector('input[name="confirmar_senha"]')?.addEventListener('input', function() {
+        document.querySelector('input[name="confirmar_senha"]').addEventListener('input', function() {
             const senha = document.querySelector('input[name="senha"]').value;
             if (this.value && this.value !== senha) {
                 this.style.borderColor = '#dc3545';
@@ -555,48 +544,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
                 this.style.borderColor = '';
             }
         });
-        
-        // Efeito de ripple nos botões
-        document.querySelectorAll('.auth-button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.cssText = `
-                    position: absolute;
-                    width: ${size}px;
-                    height: ${size}px;
-                    left: ${x}px;
-                    top: ${y}px;
-                    background: rgba(255, 255, 255, 0.3);
-                    border-radius: 50%;
-                    transform: scale(0);
-                    animation: ripple 0.6s ease-out;
-                    pointer-events: none;
-                `;
-                
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
-        });
-        
-        // Adicionar keyframe para ripple
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                to {
-                    transform: scale(2);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
     
     <!-- Animações e Interatividade -->

@@ -1,249 +1,163 @@
 /**
- * E-commerce Project - Animações e Interatividade
- * Sistema avançado de animações e micro-interações
+ * Sistema de Animações Suaves - E-commerce Project
+ * Versão 3.1.0 - Sem efeitos indesejados
  */
 
 class EcommerceAnimations {
     constructor() {
         this.init();
-        this.setupEventListeners();
-        this.initializeAnimations();
-        this.setupIntersectionObserver();
-        this.setupParallaxEffects();
-        this.setupSmoothScrolling();
-        this.setupLoadingAnimations();
-        this.setupMicroInteractions();
     }
 
     init() {
-        // Configurações globais
-        this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        this.isMobile = window.innerWidth <= 768;
-        this.scrollPosition = 0;
-        this.ticking = false;
-        
-        // Cache de elementos DOM
-        this.elements = {
-            header: document.querySelector('header'),
-            productCards: document.querySelectorAll('.product-card'),
-            buttons: document.querySelectorAll('.btn'),
-            forms: document.querySelectorAll('form'),
-            inputs: document.querySelectorAll('input, textarea, select'),
-            cartIcon: document.querySelector('.cart-icon'),
-            logo: document.querySelector('.logo'),
-            navLinks: document.querySelectorAll('nav a'),
-            hero: document.querySelector('.hero'),
-            preloader: document.querySelector('.preloader')
+        this.setupScrollAnimations();
+        this.setupHoverEffects();
+        this.setupFormAnimations();
+        this.setupButtonEffects();
+        this.setupChatbot();
+        this.setupSmoothScrolling();
+        this.setupLoadingAnimations();
+    }
+
+    // Animações de scroll suaves
+    setupScrollAnimations() {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
         };
 
-        // Criar preloader se não existir
-        if (!this.elements.preloader) {
-            this.createPreloader();
-        }
-    }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const element = entry.target;
+                    
+                    // Adicionar classes de animação baseadas no elemento
+                    if (element.classList.contains('product-card')) {
+                        element.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                        element.style.animationDelay = `${Math.random() * 0.3}s`;
+                    } else if (element.classList.contains('section-title')) {
+                        element.style.animation = 'slideInLeft 0.8s ease-out forwards';
+                    } else {
+                        element.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                    }
+                    
+                    observer.unobserve(element);
+                }
+            });
+        }, observerOptions);
 
-    createPreloader() {
-        const preloader = document.createElement('div');
-        preloader.className = 'preloader';
-        preloader.innerHTML = `
-            <div class="spinner"></div>
-            <div class="preloader-text">Carregando experiência incrível...</div>
-        `;
-        document.body.appendChild(preloader);
-        this.elements.preloader = preloader;
-    }
-
-    setupEventListeners() {
-        // Scroll events
-        window.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
-        
-        // Resize events
-        window.addEventListener('resize', this.handleResize.bind(this));
-        
-        // Load events
-        window.addEventListener('load', this.handleLoad.bind(this));
-        
-        // Mouse events para efeitos de cursor
-        document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        
-        // Touch events para dispositivos móveis
-        document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
-        
-        // Visibility change para pausar animações quando tab não está ativa
-        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-    }
-
-    initializeAnimations() {
-        // Animações de entrada para elementos
-        this.animateOnLoad();
-        
-        // Configurar animações de hover para cards
-        this.setupCardAnimations();
-        
-        // Configurar animações de botões
-        this.setupButtonAnimations();
-        
-        // Configurar animações de formulários
-        this.setupFormAnimations();
-        
-        // Configurar animações de navegação
-        this.setupNavigationAnimations();
-    }
-
-    animateOnLoad() {
-        if (this.isReducedMotion) return;
-
-        // Animar elementos com delay escalonado
-        const elementsToAnimate = document.querySelectorAll('.fade-in, .product-card, .hero, h1, h2');
-        
-        elementsToAnimate.forEach((element, index) => {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(30px)';
-            
-            setTimeout(() => {
-                element.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-            }, index * 100);
+        // Observar elementos para animação
+        document.querySelectorAll('.product-card, .section-title, .hero h1, .hero p').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
         });
     }
 
-    setupCardAnimations() {
-        this.elements.productCards.forEach(card => {
-            // Efeito de hover 3D
-            card.addEventListener('mouseenter', (e) => {
-                if (this.isReducedMotion) return;
-                
+    // Efeitos de hover suaves
+    setupHoverEffects() {
+        // Efeito de hover nos cards de produto
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-8px) scale(1.02)';
                 card.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                card.style.transform = 'translateY(-15px) rotateX(5deg) scale(1.02)';
-                
-                // Efeito de brilho
-                this.addShineEffect(card);
-                
-                // Animar imagem do produto
-                const productImage = card.querySelector('.product-image');
-                if (productImage) {
-                    productImage.style.transform = 'scale(1.05)';
-                }
             });
 
-            card.addEventListener('mouseleave', (e) => {
-                if (this.isReducedMotion) return;
-                
-                card.style.transform = 'translateY(0) rotateX(0) scale(1)';
-                
-                // Resetar imagem do produto
-                const productImage = card.querySelector('.product-image');
-                if (productImage) {
-                    productImage.style.transform = 'scale(1)';
-                }
-                
-                // Remover efeito de brilho
-                this.removeShineEffect(card);
-            });
-
-            // Efeito de clique
-            card.addEventListener('mousedown', (e) => {
-                if (this.isReducedMotion) return;
-                card.style.transform = 'translateY(-10px) rotateX(2deg) scale(1.01)';
-            });
-
-            card.addEventListener('mouseup', (e) => {
-                if (this.isReducedMotion) return;
-                card.style.transform = 'translateY(-15px) rotateX(5deg) scale(1.02)';
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
             });
         });
-    }
 
-    addShineEffect(element) {
-        const shine = document.createElement('div');
-        shine.className = 'shine-effect';
-        shine.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s ease;
-            pointer-events: none;
-            z-index: 1;
-        `;
-        
-        element.style.position = 'relative';
-        element.appendChild(shine);
-        
-        // Trigger animation
-        setTimeout(() => {
-            shine.style.left = '100%';
-        }, 50);
-        
-        // Remove after animation
-        setTimeout(() => {
-            if (shine.parentNode) {
-                shine.parentNode.removeChild(shine);
-            }
-        }, 650);
-    }
+        // Efeito de hover nos botões
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.style.transform = 'translateY(-2px)';
+                btn.style.transition = 'all 0.2s ease-out';
+            });
 
-    removeShineEffect(element) {
-        const shine = element.querySelector('.shine-effect');
-        if (shine) {
-            shine.remove();
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Efeito de hover no logo
+        const logo = document.querySelector('.logo');
+        if (logo) {
+            logo.addEventListener('mouseenter', () => {
+                logo.style.transform = 'scale(1.05)';
+                logo.style.transition = 'transform 0.3s ease-out';
+            });
+
+            logo.addEventListener('mouseleave', () => {
+                logo.style.transform = 'scale(1)';
+            });
         }
     }
 
-    setupButtonAnimations() {
-        this.elements.buttons.forEach(button => {
-            // Efeito ripple
-            button.addEventListener('click', (e) => {
-                if (this.isReducedMotion) return;
-                this.createRippleEffect(e, button);
+    // Animações de formulários
+    setupFormAnimations() {
+        // Efeito de foco nos inputs
+        document.querySelectorAll('input, textarea, select').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.style.transform = 'translateY(-2px)';
+                input.style.transition = 'all 0.3s ease-out';
+                input.style.boxShadow = '0 4px 12px rgba(233, 69, 96, 0.2)';
             });
 
-            // Efeito de hover
-            button.addEventListener('mouseenter', (e) => {
-                if (this.isReducedMotion) return;
-                
-                button.style.transform = 'translateY(-3px) scale(1.02)';
-                
-                // Adicionar partículas ao redor do botão
-                this.addButtonParticles(button);
+            input.addEventListener('blur', () => {
+                input.style.transform = 'translateY(0)';
+                input.style.boxShadow = 'none';
             });
+        });
 
-            button.addEventListener('mouseleave', (e) => {
-                if (this.isReducedMotion) return;
-                button.style.transform = 'translateY(0) scale(1)';
+        // Validação visual em tempo real
+        document.querySelectorAll('input[type="email"]').forEach(input => {
+            input.addEventListener('input', () => {
+                const isValid = input.value.includes('@') && input.value.length > 5;
+                if (input.value.length > 0) {
+                    input.style.borderColor = isValid ? '#28a745' : '#dc3545';
+                    input.style.transition = 'border-color 0.3s ease-out';
+                } else {
+                    input.style.borderColor = '';
+                }
             });
         });
     }
 
-    createRippleEffect(event, element) {
-        const ripple = document.createElement('span');
-        const rect = element.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        const x = event.clientX - rect.left - size / 2;
-        const y = event.clientY - rect.top - size / 2;
-        
-        ripple.style.cssText = `
-            position: absolute;
-            width: ${size}px;
-            height: ${size}px;
-            left: ${x}px;
-            top: ${y}px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: ripple 0.6s ease-out;
-            pointer-events: none;
-            z-index: 1;
-        `;
-        
-        element.style.position = 'relative';
-        element.style.overflow = 'hidden';
-        element.appendChild(ripple);
-        
-        // Adicionar keyframes se não existirem
+    // Efeitos de botões
+    setupButtonEffects() {
+        document.querySelectorAll('.btn-primary').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Efeito ripple
+                const ripple = document.createElement('span');
+                const rect = btn.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s ease-out;
+                    pointer-events: none;
+                `;
+                
+                btn.style.position = 'relative';
+                btn.style.overflow = 'hidden';
+                btn.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Adicionar keyframe para ripple
         if (!document.querySelector('#ripple-keyframes')) {
             const style = document.createElement('style');
             style.id = 'ripple-keyframes';
@@ -257,293 +171,118 @@ class EcommerceAnimations {
             `;
             document.head.appendChild(style);
         }
-        
-        setTimeout(() => {
-            ripple.remove();
-        }, 600);
     }
 
-    addButtonParticles(button) {
-        if (this.isMobile) return;
-        
-        const particleCount = 6;
-        const rect = button.getBoundingClientRect();
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'button-particle';
-            particle.style.cssText = `
-                position: fixed;
-                width: 4px;
-                height: 4px;
-                background: var(--primary-color);
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 1000;
-                left: ${rect.left + rect.width / 2}px;
-                top: ${rect.top + rect.height / 2}px;
-                animation: particle-float 2s ease-out forwards;
-            `;
+    // Sistema de chatbot
+    setupChatbot() {
+        const chatbotToggle = document.querySelector('.chatbot-toggle');
+        const chatbotWindow = document.querySelector('.chatbot-window');
+        const chatbotClose = document.querySelector('.chatbot-close');
+        const chatbotInput = document.querySelector('.chatbot-input');
+        const chatbotSend = document.querySelector('.chatbot-send');
+        const chatbotMessages = document.querySelector('.chatbot-messages');
+
+        if (!chatbotToggle || !chatbotWindow) return;
+
+        // Toggle chatbot
+        chatbotToggle.addEventListener('click', () => {
+            const isVisible = chatbotWindow.style.display === 'flex';
+            chatbotWindow.style.display = isVisible ? 'none' : 'flex';
             
-            // Direção aleatória
-            const angle = (i / particleCount) * Math.PI * 2;
-            const distance = 30 + Math.random() * 20;
-            const endX = Math.cos(angle) * distance;
-            const endY = Math.sin(angle) * distance;
-            
-            particle.style.setProperty('--end-x', `${endX}px`);
-            particle.style.setProperty('--end-y', `${endY}px`);
-            
-            document.body.appendChild(particle);
-            
-            setTimeout(() => {
-                particle.remove();
-            }, 2000);
-        }
-        
-        // Adicionar keyframes para partículas
-        if (!document.querySelector('#particle-keyframes')) {
-            const style = document.createElement('style');
-            style.id = 'particle-keyframes';
-            style.textContent = `
-                @keyframes particle-float {
-                    0% {
-                        transform: translate(0, 0) scale(1);
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translate(var(--end-x), var(--end-y)) scale(0);
-                        opacity: 0;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    setupFormAnimations() {
-        this.elements.inputs.forEach(input => {
-            // Efeito de foco
-            input.addEventListener('focus', (e) => {
-                if (this.isReducedMotion) return;
-                
-                input.style.transform = 'translateY(-2px)';
-                
-                // Adicionar efeito de onda
-                this.addInputWaveEffect(input);
-            });
-
-            input.addEventListener('blur', (e) => {
-                if (this.isReducedMotion) return;
-                input.style.transform = 'translateY(0)';
-            });
-
-            // Efeito de digitação
-            input.addEventListener('input', (e) => {
-                if (this.isReducedMotion) return;
-                this.addTypingEffect(input);
-            });
-        });
-    }
-
-    addInputWaveEffect(input) {
-        const wave = document.createElement('div');
-        wave.className = 'input-wave';
-        wave.style.cssText = `
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--primary-color);
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
-        `;
-        
-        const parent = input.parentNode;
-        parent.style.position = 'relative';
-        parent.appendChild(wave);
-        
-        setTimeout(() => {
-            wave.style.width = '100%';
-        }, 50);
-        
-        input.addEventListener('blur', () => {
-            wave.style.width = '0';
-            setTimeout(() => {
-                if (wave.parentNode) {
-                    wave.remove();
-                }
-            }, 300);
-        }, { once: true });
-    }
-
-    addTypingEffect(input) {
-        input.style.boxShadow = '0 0 20px rgba(233, 69, 96, 0.3)';
-        
-        clearTimeout(input.typingTimeout);
-        input.typingTimeout = setTimeout(() => {
-            input.style.boxShadow = '';
-        }, 500);
-    }
-
-    setupNavigationAnimations() {
-        // Animação do logo
-        if (this.elements.logo) {
-            this.elements.logo.addEventListener('mouseenter', () => {
-                if (this.isReducedMotion) return;
-                this.elements.logo.style.transform = 'translateY(-2px) scale(1.05)';
-            });
-
-            this.elements.logo.addEventListener('mouseleave', () => {
-                if (this.isReducedMotion) return;
-                this.elements.logo.style.transform = 'translateY(0) scale(1)';
-            });
-        }
-
-        // Animação dos links de navegação
-        this.elements.navLinks.forEach((link, index) => {
-            link.addEventListener('mouseenter', () => {
-                if (this.isReducedMotion) return;
-                
-                link.style.transform = 'translateY(-2px)';
-                
-                // Efeito de onda nos outros links
-                this.elements.navLinks.forEach((otherLink, otherIndex) => {
-                    if (otherIndex !== index) {
-                        const distance = Math.abs(otherIndex - index);
-                        const delay = distance * 50;
-                        
-                        setTimeout(() => {
-                            otherLink.style.transform = 'translateY(-1px)';
-                            setTimeout(() => {
-                                otherLink.style.transform = 'translateY(0)';
-                            }, 150);
-                        }, delay);
-                    }
-                });
-            });
-
-            link.addEventListener('mouseleave', () => {
-                if (this.isReducedMotion) return;
-                link.style.transform = 'translateY(0)';
-            });
-        });
-
-        // Animação do carrinho
-        if (this.elements.cartIcon) {
-            this.elements.cartIcon.addEventListener('mouseenter', () => {
-                if (this.isReducedMotion) return;
-                this.elements.cartIcon.style.transform = 'translateY(-3px) scale(1.05)';
-                this.addCartBounce();
-            });
-
-            this.elements.cartIcon.addEventListener('mouseleave', () => {
-                if (this.isReducedMotion) return;
-                this.elements.cartIcon.style.transform = 'translateY(0) scale(1)';
-            });
-        }
-    }
-
-    addCartBounce() {
-        const cartCount = this.elements.cartIcon.querySelector('.cart-count');
-        if (cartCount) {
-            cartCount.style.animation = 'none';
-            setTimeout(() => {
-                cartCount.style.animation = 'cartBounce 0.6s ease';
-            }, 10);
-        }
-    }
-
-    setupIntersectionObserver() {
-        if (!window.IntersectionObserver) return;
-
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    this.animateElement(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        // Observar elementos que devem animar ao entrar na viewport
-        const elementsToObserve = document.querySelectorAll('.product-card, .hero, h2, form, table');
-        elementsToObserve.forEach(element => {
-            observer.observe(element);
-        });
-    }
-
-    animateElement(element) {
-        if (this.isReducedMotion) return;
-
-        element.classList.add('animate-in');
-        
-        // Adicionar classe CSS se não existir
-        if (!document.querySelector('#animate-in-styles')) {
-            const style = document.createElement('style');
-            style.id = 'animate-in-styles';
-            style.textContent = `
-                .animate-in {
-                    animation: slideInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                }
-                
-                @keyframes slideInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    setupParallaxEffects() {
-        if (this.isMobile || this.isReducedMotion) return;
-
-        // Efeito parallax no hero
-        if (this.elements.hero) {
-            window.addEventListener('scroll', () => {
-                const scrolled = window.pageYOffset;
-                const parallax = scrolled * 0.5;
-                
-                this.elements.hero.style.transform = `translateY(${parallax}px)`;
-            }, { passive: true });
-        }
-
-        // Efeito parallax nas imagens dos produtos
-        this.elements.productCards.forEach(card => {
-            const image = card.querySelector('.product-image');
-            if (image) {
-                window.addEventListener('scroll', () => {
-                    const rect = card.getBoundingClientRect();
-                    const scrolled = window.pageYOffset;
-                    const rate = scrolled * -0.1;
-                    
-                    if (rect.top < window.innerHeight && rect.bottom > 0) {
-                        image.style.transform = `translateY(${rate}px)`;
-                    }
-                }, { passive: true });
+            if (!isVisible) {
+                chatbotWindow.style.animation = 'fadeInUp 0.3s ease-out';
             }
         });
+
+        // Fechar chatbot
+        if (chatbotClose) {
+            chatbotClose.addEventListener('click', () => {
+                chatbotWindow.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    chatbotWindow.style.display = 'none';
+                }, 300);
+            });
+        }
+
+        // Enviar mensagem
+        const sendMessage = () => {
+            const message = chatbotInput?.value.trim();
+            if (!message) return;
+
+            // Adicionar mensagem do usuário
+            this.addChatMessage(message, 'user');
+            chatbotInput.value = '';
+
+            // Simular resposta do bot
+            setTimeout(() => {
+                const response = this.getChatbotResponse(message);
+                this.addChatMessage(response, 'bot');
+            }, 1000);
+        };
+
+        if (chatbotSend) {
+            chatbotSend.addEventListener('click', sendMessage);
+        }
+
+        if (chatbotInput) {
+            chatbotInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        }
     }
 
+    // Adicionar mensagem ao chat
+    addChatMessage(message, sender) {
+        const chatbotMessages = document.querySelector('.chatbot-messages');
+        if (!chatbotMessages) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: fadeInUp 0.3s ease-out;
+            ${sender === 'user' 
+                ? 'background: linear-gradient(135deg, #e94560, #ff6b8a); color: white; margin-left: auto; text-align: right;'
+                : 'background: rgba(255, 255, 255, 0.1); color: #ffffff; margin-right: auto;'
+            }
+        `;
+        messageDiv.textContent = message;
+        
+        chatbotMessages.appendChild(messageDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+
+    // Respostas do chatbot
+    getChatbotResponse(message) {
+        const responses = {
+            'ola': 'Olá! Como posso ajudá-lo hoje?',
+            'produtos': 'Temos uma grande variedade de produtos eletrônicos, smartphones, notebooks e muito mais!',
+            'preco': 'Nossos preços são muito competitivos! Você pode ver os valores na página de cada produto.',
+            'entrega': 'Fazemos entregas para todo o Brasil! O prazo varia de 3 a 10 dias úteis.',
+            'pagamento': 'Aceitamos cartão de crédito, débito, PIX e boleto bancário.',
+            'ajuda': 'Estou aqui para ajudar! Você pode perguntar sobre produtos, preços, entrega ou qualquer dúvida.',
+            'default': 'Obrigado pela sua mensagem! Nossa equipe está sempre pronta para ajudar. Você pode navegar pelos nossos produtos ou entrar em contato conosco.'
+        };
+
+        const lowerMessage = message.toLowerCase();
+        for (const [key, response] of Object.entries(responses)) {
+            if (lowerMessage.includes(key)) {
+                return response;
+            }
+        }
+        return responses.default;
+    }
+
+    // Scroll suave
     setupSmoothScrolling() {
-        // Smooth scroll para links internos
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', (e) => {
+            anchor.addEventListener('click', function (e) {
                 e.preventDefault();
-                const target = document.querySelector(anchor.getAttribute('href'));
-                
+                const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
                     target.scrollIntoView({
                         behavior: 'smooth',
@@ -554,385 +293,141 @@ class EcommerceAnimations {
         });
     }
 
+    // Animações de carregamento
     setupLoadingAnimations() {
-        // Simular carregamento e remover preloader
+        // Animação de entrada da página
         window.addEventListener('load', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-out';
+            
             setTimeout(() => {
-                if (this.elements.preloader) {
-                    this.elements.preloader.classList.add('hidden');
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Lazy loading para imagens
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.5s ease-out';
                     
                     setTimeout(() => {
-                        this.elements.preloader.remove();
-                    }, 500);
-                }
-                
-                // Iniciar animações de entrada
-                this.startEntryAnimations();
-            }, 1000);
-        });
-    }
-
-    startEntryAnimations() {
-        if (this.isReducedMotion) return;
-
-        // Animar header
-        if (this.elements.header) {
-            this.elements.header.style.transform = 'translateY(-100%)';
-            setTimeout(() => {
-                this.elements.header.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-                this.elements.header.style.transform = 'translateY(0)';
-            }, 200);
-        }
-
-        // Animar conteúdo principal
-        const mainContent = document.querySelector('main');
-        if (mainContent) {
-            mainContent.style.opacity = '0';
-            mainContent.style.transform = 'translateY(20px)';
-            
-            setTimeout(() => {
-                mainContent.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                mainContent.style.opacity = '1';
-                mainContent.style.transform = 'translateY(0)';
-            }, 400);
-        }
-    }
-
-    setupMicroInteractions() {
-        // Efeito de cursor personalizado
-        this.setupCustomCursor();
-        
-        // Efeitos de hover em elementos interativos
-        this.setupHoverEffects();
-        
-        // Animações de loading em formulários
-        this.setupFormLoadingStates();
-        
-        // Efeitos de feedback visual
-        this.setupFeedbackEffects();
-    }
-
-    setupCustomCursor() {
-        if (this.isMobile) return;
-
-        const cursor = document.createElement('div');
-        cursor.className = 'custom-cursor';
-        cursor.style.cssText = `
-            position: fixed;
-            width: 20px;
-            height: 20px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transition: all 0.1s ease;
-            opacity: 0;
-            transform: translate(-50%, -50%);
-        `;
-        
-        document.body.appendChild(cursor);
-
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            cursor.style.opacity = '0.6';
-        });
-
-        document.addEventListener('mouseenter', () => {
-            cursor.style.opacity = '0.6';
-        });
-
-        document.addEventListener('mouseleave', () => {
-            cursor.style.opacity = '0';
-        });
-
-        // Expandir cursor em elementos interativos
-        const interactiveElements = document.querySelectorAll('a, button, .btn, .product-card');
-        interactiveElements.forEach(element => {
-            element.addEventListener('mouseenter', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(2)';
-                cursor.style.opacity = '0.3';
-            });
-
-            element.addEventListener('mouseleave', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-                cursor.style.opacity = '0.6';
-            });
-        });
-    }
-
-    setupHoverEffects() {
-        // Efeito de magnetismo em botões
-        this.elements.buttons.forEach(button => {
-            button.addEventListener('mousemove', (e) => {
-                if (this.isMobile || this.isReducedMotion) return;
-                
-                const rect = button.getBoundingClientRect();
-                const x = e.clientX - rect.left - rect.width / 2;
-                const y = e.clientY - rect.top - rect.height / 2;
-                
-                button.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px) translateY(-3px) scale(1.02)`;
-            });
-
-            button.addEventListener('mouseleave', () => {
-                if (this.isReducedMotion) return;
-                button.style.transform = 'translate(0, 0) translateY(0) scale(1)';
-            });
-        });
-    }
-
-    setupFormLoadingStates() {
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', (e) => {
-                const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
-                if (submitButton) {
-                    this.addLoadingState(submitButton);
+                        img.style.opacity = '1';
+                    }, 100);
+                    
+                    imageObserver.unobserve(img);
                 }
             });
         });
-    }
 
-    addLoadingState(button) {
-        const originalText = button.textContent;
-        button.textContent = 'Processando...';
-        button.disabled = true;
-        
-        // Adicionar spinner
-        const spinner = document.createElement('span');
-        spinner.className = 'loading-spinner';
-        spinner.style.cssText = `
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 8px;
-        `;
-        
-        button.appendChild(spinner);
-        
-        // Simular processamento (remover em produção)
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.disabled = false;
-            spinner.remove();
-        }, 2000);
-    }
-
-    setupFeedbackEffects() {
-        // Efeito de sucesso em formulários
-        const inputs = document.querySelectorAll('input, textarea');
-        inputs.forEach(input => {
-            input.addEventListener('change', () => {
-                if (input.value && input.checkValidity()) {
-                    this.addSuccessEffect(input);
-                }
-            });
+        document.querySelectorAll('img').forEach(img => {
+            imageObserver.observe(img);
         });
     }
 
-    addSuccessEffect(element) {
-        element.style.borderColor = '#28a745';
-        element.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
-        
-        setTimeout(() => {
-            element.style.borderColor = '';
-            element.style.boxShadow = '';
-        }, 2000);
-    }
-
-    handleScroll() {
-        if (!this.ticking) {
-            requestAnimationFrame(() => {
-                this.updateScrollEffects();
-                this.ticking = false;
-            });
-            this.ticking = true;
-        }
-    }
-
-    updateScrollEffects() {
-        const scrolled = window.pageYOffset;
-        
-        // Efeito no header
-        if (this.elements.header) {
-            if (scrolled > 100) {
-                this.elements.header.classList.add('scrolled');
-            } else {
-                this.elements.header.classList.remove('scrolled');
-            }
-        }
-        
-        // Efeito parallax no background
-        if (!this.isMobile && !this.isReducedMotion) {
-            document.body.style.backgroundPosition = `center ${scrolled * 0.5}px`;
-        }
-    }
-
-    handleResize() {
-        this.isMobile = window.innerWidth <= 768;
-        
-        // Reconfigurar efeitos baseados no tamanho da tela
-        if (this.isMobile) {
-            this.disableDesktopEffects();
-        } else {
-            this.enableDesktopEffects();
-        }
-    }
-
-    handleLoad() {
-        // Otimizar performance após carregamento
-        this.optimizeAnimations();
-    }
-
-    handleMouseMove(e) {
-        if (this.isMobile) return;
-        
-        // Efeito de movimento do background baseado no mouse
-        const x = e.clientX / window.innerWidth;
-        const y = e.clientY / window.innerHeight;
-        
-        document.body.style.backgroundPosition = `${50 + x * 5}% ${50 + y * 5}%`;
-    }
-
-    handleTouchStart(e) {
-        // Adicionar feedback tátil em dispositivos móveis
-        if (e.target.matches('.btn, button, a, .product-card')) {
-            e.target.style.transform = 'scale(0.98)';
-            
-            setTimeout(() => {
-                e.target.style.transform = '';
-            }, 150);
-        }
-    }
-
-    handleVisibilityChange() {
-        if (document.hidden) {
-            this.pauseAnimations();
-        } else {
-            this.resumeAnimations();
-        }
-    }
-
-    disableDesktopEffects() {
-        // Desabilitar efeitos pesados em mobile
-        const customCursor = document.querySelector('.custom-cursor');
-        if (customCursor) {
-            customCursor.style.display = 'none';
-        }
-    }
-
-    enableDesktopEffects() {
-        // Reabilitar efeitos em desktop
-        const customCursor = document.querySelector('.custom-cursor');
-        if (customCursor) {
-            customCursor.style.display = 'block';
-        }
-    }
-
-    pauseAnimations() {
-        document.body.style.animationPlayState = 'paused';
-    }
-
-    resumeAnimations() {
-        document.body.style.animationPlayState = 'running';
-    }
-
-    optimizeAnimations() {
-        // Otimizações de performance
-        if (this.isReducedMotion) {
-            this.disableAllAnimations();
-        }
-        
-        // Usar will-change para elementos que serão animados
-        this.elements.productCards.forEach(card => {
-            card.style.willChange = 'transform';
-        });
-        
-        this.elements.buttons.forEach(button => {
-            button.style.willChange = 'transform';
-        });
-    }
-
-    disableAllAnimations() {
+    // Adicionar efeito LED nos produtos (conforme solicitado)
+    addLEDEffect() {
         const style = document.createElement('style');
         style.textContent = `
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
+            .product-card.led-effect {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .product-card.led-effect::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, 
+                    transparent, 
+                    rgba(233, 69, 96, 0.3), 
+                    rgba(255, 107, 138, 0.3), 
+                    transparent
+                );
+                animation: ledSweep 3s ease-in-out infinite;
+                pointer-events: none;
+            }
+            
+            @keyframes ledSweep {
+                0% { left: -100%; }
+                50% { left: 100%; }
+                100% { left: 100%; }
             }
         `;
         document.head.appendChild(style);
-    }
 
-    // Método público para adicionar animação a novos elementos
-    animateNewElement(element, animationType = 'fadeIn') {
-        if (this.isReducedMotion) return;
-        
-        const animations = {
-            fadeIn: 'fadeInUp 0.6s ease-out',
-            slideIn: 'slideInLeft 0.6s ease-out',
-            bounce: 'bounceIn 0.8s ease-out',
-            zoom: 'zoomIn 0.5s ease-out'
-        };
-        
-        element.style.animation = animations[animationType] || animations.fadeIn;
-    }
-
-    // Método público para trigger de animações customizadas
-    triggerAnimation(selector, animationType) {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach((element, index) => {
-            setTimeout(() => {
-                this.animateNewElement(element, animationType);
-            }, index * 100);
+        // Aplicar efeito LED aos produtos em destaque
+        document.querySelectorAll('.product-card').forEach((card, index) => {
+            if (index % 2 === 0) { // Aplicar a produtos alternados
+                card.classList.add('led-effect');
+            }
         });
     }
 }
 
-// Inicializar quando o DOM estiver pronto
+// Inicializar animações quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
-    window.ecommerceAnimations = new EcommerceAnimations();
+    const animations = new EcommerceAnimations();
+    
+    // Adicionar efeito LED após 2 segundos
+    setTimeout(() => {
+        animations.addLEDEffect();
+    }, 2000);
 });
 
-// Adicionar keyframes CSS necessários
+// Adicionar keyframes CSS para animações
 const animationStyles = document.createElement('style');
 animationStyles.textContent = `
-    @keyframes bounceIn {
-        0% { transform: scale(0.3); opacity: 0; }
-        50% { transform: scale(1.05); }
-        70% { transform: scale(0.9); }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    
-    @keyframes zoomIn {
-        0% { transform: scale(0); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     @keyframes slideInLeft {
-        0% { transform: translateX(-100px); opacity: 0; }
-        100% { transform: translateX(0); opacity: 1; }
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
     
-    @keyframes cartBounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-10px); }
-        60% { transform: translateY(-5px); }
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
     }
     
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+    
+    .pulse {
+        animation: pulse 2s ease-in-out infinite;
     }
 `;
-
 document.head.appendChild(animationStyles);
-
-// Exportar para uso global
-window.EcommerceAnimations = EcommerceAnimations;
 
