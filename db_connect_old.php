@@ -1,7 +1,7 @@
 <?php
 /**
  * Arquivo de conexão com o banco de dados MySQL
- * E-commerce Project - Versão Corrigida
+ * E-commerce Project
  */
 
 // Configurações do banco de dados
@@ -151,12 +151,12 @@ function salvarPedido($dadosCliente, $carrinho, $total) {
         // Inserir pedido
         $stmt = $pdo->prepare("INSERT INTO pedidos (usuario_id, status, total, endereco_entrega, cidade_entrega, cep_entrega) 
                               VALUES (NULL, 'Pendente', ?, ?, ?, ?)");
-        $stmt->execute([
-            $total,
-            $dadosCliente["endereco"] ?? null,
-            $dadosCliente["cidade"] ?? null,
-            $dadosCliente["cep"] ?? null
-        ]);
+            $stmt->execute([
+                $total,
+                $dadosCliente["endereco"] ?? null,
+                $dadosCliente["cidade"] ?? null,
+                $dadosCliente["cep"] ?? null
+            ]);
         
         $pedidoId = $pdo->lastInsertId();
         
@@ -230,6 +230,8 @@ function adicionarProduto($nome, $categoria, $preco, $descricao) {
         return false;
     }
 }
+?>
+
 
 /**
  * Função para autenticar usuário
@@ -481,6 +483,8 @@ function reativarUsuario($usuarioId) {
     }
 }
 
+
+
 /**
  * Função para obter pedidos do usuário
  */
@@ -498,5 +502,7 @@ function obterPedidosUsuario($usuarioId, $limite = 20) {
         return [];
     }
 }
+
+
 ?>
 
