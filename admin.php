@@ -1,8 +1,12 @@
 <?php
 session_start();
+require_once 'db_connect.php';
 
-// Simulação de verificação de admin (em produção, usar sistema de autenticação real)
-$isAdmin = true; // Para demonstração
+// Verificar se o usuário é admin
+if (!isset($_SESSION['usuario_id']) || !verificarAdmin($_SESSION['usuario_id'])) {
+    header('Location: login.php');
+    exit();
+}
 
 // Função para fazer upload de imagem
 function uploadImagem($arquivo) {
@@ -33,71 +37,63 @@ function uploadImagem($arquivo) {
     }
 }
 
-// Produtos de exemplo (simulando banco de dados)
-$produtos = [
-    [
-        'id' => 1,
-        'nome' => 'Smartphone Samsung Galaxy S24',
-        'categoria' => 'Eletrônicos',
-        'preco' => 899.99,
-        'descricao' => 'Smartphone premium com tela Dynamic AMOLED de 6.1 polegadas',
-        'imagem' => 'produto_1.jpg'
-    ],
-    [
-        'id' => 2,
-        'nome' => 'Notebook Dell Inspiron 15 3000',
-        'categoria' => 'Informática',
-        'preco' => 2499.99,
-        'descricao' => 'Notebook para uso profissional com processador Intel Core i5',
-        'imagem' => 'produto_2.jpg'
-    ]
-];
-
 $mensagem = '';
 $tipo_mensagem = '';
 
-// Processar formulário
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Obter categorias do banco de dados
+$categorias = obterCategorias();
+
+// Processar formulário de adicionar produto
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_produto'])) {
     $nome = trim($_POST['nome'] ?? '');
-    $categoria = trim($_POST['categoria'] ?? '');
-    $preco = floatval($_POST['preco'] ?? 0);
-    $descricao = trim($_POST['descricao'] ?? '');
-    
+    $descricao_curta = trim($_POST['descricao_curta'] ?? '');
+    $descricao_longa = trim($_POST['descricao_longa'] ?? '');
+    $preco = floatval(str_replace(',', '.', $_POST['preco'] ?? 0)); // Converte vírgula para ponto
+    $categoria_id = intval($_POST['categoria_id'] ?? 0);
+    $estoque = intval($_POST['estoque'] ?? 0);
+    $destaque = isset($_POST['destaque']) ? 1 : 0;
+    $especificacoes_json = trim($_POST['especificacoes_json'] ?? '');
+
     // Validar dados
-    if (empty($nome) || empty($categoria) || $preco <= 0 || empty($descricao)) {
-        $mensagem = "Por favor, preencha todos os campos corretamente.";
+    if (empty($nome) || empty($descricao_curta) || empty($descricao_longa) || $preco <= 0 || $categoria_id <= 0 || $estoque < 0) {
+        $mensagem = "Por favor, preencha todos os campos obrigatórios corretamente.";
         $tipo_mensagem = "error";
     } else {
-        $imagemPath = '';
+        $imagem_url = '';
         
         // Processar upload de imagem se fornecida
         if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] !== UPLOAD_ERR_NO_FILE) {
             $uploadResult = uploadImagem($_FILES['imagem']);
             if ($uploadResult['success']) {
-                $imagemPath = $uploadResult['filename'];
+                $imagem_url = $uploadResult['filepath']; // Salva o caminho completo
             } else {
                 $mensagem = $uploadResult['message'];
                 $tipo_mensagem = "error";
             }
         }
         
-        if (empty($mensagem)) {
-            // Simular adição ao banco de dados
-            $novoProduto = [
-                'id' => count($produtos) + 1,
-                'nome' => $nome,
-                'categoria' => $categoria,
-                'preco' => $preco,
-                'descricao' => $descricao,
-                'imagem' => $imagemPath
-            ];
+        if (empty($mensagem)) { // Se não houve erro no upload
+            $produto_id = adicionarProduto($nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url, $especificacoes_json, $destaque);
             
-            $produtos[] = $novoProduto;
-            $mensagem = "Produto adicionado com sucesso!";
-            $tipo_mensagem = "success";
+            if ($produto_id) {
+                $mensagem = "Produto adicionado com sucesso! ID: " . $produto_id;
+                $tipo_mensagem = "success";
+                // Limpar campos do formulário após sucesso
+                $_POST = array(); 
+            } else {
+                $mensagem = "Erro ao adicionar produto. Verifique os logs.";
+                $tipo_mensagem = "error";
+            }
         }
     }
 }
+
+// Obter todos os produtos para listar
+$produtos_cadastrados = obterTodosProdutos();
+
+// Obter estatísticas de produtos
+$estatisticas_produtos = obterEstatisticasProdutos();
+
 ?>
 
 <!DOCTYPE html>
@@ -341,13 +337,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .product-image-thumb {
             width: 50px;
             height: 50px;
-            background: var(--card-bg);
+            object-fit: cover;
             border-radius: var(--border-radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: var(--text-dark);
+            display: block;
         }
         
         .price-cell {
@@ -442,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <ul>
                         <li><a href="index.php">Início</a></li>
                         <li><a href="produtos.php">Produtos</a></li>
-                        <li><a href="admin_new.php">Admin</a></li>
+                        <li><a href="admin.php">Admin</a></li>
                         <li><a href="logout.php">Sair</a></li>
                     </ul>
                 </nav>
@@ -465,20 +457,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Estatísticas -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-number"><?php echo count($produtos); ?></span>
+                <span class="stat-number"><?php echo $estatisticas_produtos['total_produtos']; ?></span>
                 <span class="stat-label">Produtos Cadastrados</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number">R$ <?php echo number_format(array_sum(array_column($produtos, 'preco')), 2, ',', '.'); ?></span>
+                <span class="stat-number">R$ <?php echo number_format($estatisticas_produtos['valor_total_estoque'], 2, ',', '.'); ?></span>
                 <span class="stat-label">Valor Total Estoque</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number"><?php echo count(array_unique(array_column($produtos, 'categoria'))); ?></span>
-                <span class="stat-label">Categorias Ativas</span>
+                <span class="stat-number"><?php echo $estatisticas_produtos['produtos_destaque']; ?></span>
+                <span class="stat-label">Produtos em Destaque</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number">98%</span>
-                <span class="stat-label">Taxa de Satisfação</span>
+                <span class="stat-number"><?php echo $estatisticas_produtos['produtos_baixo_estoque']; ?></span>
+                <span class="stat-label">Baixo Estoque</span>
             </div>
         </div>
 
@@ -494,142 +486,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label for="nome" class="form-label">Nome do Produto</label>
                         <input type="text" id="nome" name="nome" class="form-input" 
-                               placeholder="Ex: Smartphone Samsung Galaxy S24" required>
+                               placeholder="Ex: Smartphone Samsung Galaxy S24" value="<?php echo htmlspecialchars($_POST['nome'] ?? ''); ?>" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="categoria" class="form-label">Categoria</label>
-                        <select id="categoria" name="categoria" class="form-select" required>
-                            <option value="">Selecione uma categoria</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Informática">Informática</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Áudio">Áudio</option>
-                            <option value="Casa e Jardim">Casa e Jardim</option>
-                            <option value="Esportes">Esportes</option>
-                        </select>
+                        <label for="descricao_curta" class="form-label">Descrição Curta</label>
+                        <textarea id="descricao_curta" name="descricao_curta" class="form-textarea" 
+                                  placeholder="Breve descrição do produto (máx. 255 caracteres)" required><?php echo htmlspecialchars($_POST['descricao_curta'] ?? ''); ?></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="descricao_longa" class="form-label">Descrição Longa</label>
+                        <textarea id="descricao_longa" name="descricao_longa" class="form-textarea" 
+                                  placeholder="Descrição detalhada do produto" required><?php echo htmlspecialchars($_POST['descricao_longa'] ?? ''); ?></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label for="preco" class="form-label">Preço (R$)</label>
-                        <input type="number" id="preco" name="preco" class="form-input" 
-                               step="0.01" min="0" placeholder="0,00" required>
+                        <input type="number" id="preco" name="preco" class="form-input" step="0.01" 
+                               placeholder="Ex: 899.99" value="<?php echo htmlspecialchars($_POST['preco'] ?? ''); ?>" required>
                     </div>
                     
+                    <div class="form-group">
+                        <label for="categoria_id" class="form-label">Categoria</label>
+                        <select id="categoria_id" name="categoria_id" class="form-select" required>
+                            <option value="">Selecione uma categoria</option>
+                            <?php foreach ($categorias as $cat): ?>
+                                <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_POST['categoria_id']) && $_POST['categoria_id'] == $cat['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($cat['nome']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="estoque" class="form-label">Estoque</label>
+                        <input type="number" id="estoque" name="estoque" class="form-input" 
+                               placeholder="Ex: 50" value="<?php echo htmlspecialchars($_POST['estoque'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="especificacoes_json" class="form-label">Especificações (JSON)</label>
+                        <textarea id="especificacoes_json" name="especificacoes_json" class="form-textarea" 
+                                  placeholder="Ex: {'Cor': 'Preto', 'Memória': '128GB'}"><?php echo htmlspecialchars($_POST['especificacoes_json'] ?? ''); ?></textarea>
+                        <p class="file-upload-hint">Formato JSON: {"Chave":"Valor", "Outra Chave":"Outro Valor"}</p>
+                    </div>
+
                     <div class="form-group">
                         <label for="imagem" class="form-label">Imagem do Produto</label>
                         <div class="file-upload-container">
-                            <input type="file" id="imagem" name="imagem" class="file-upload-input" 
-                                   accept="image/jpeg,image/png,image/gif,image/webp">
+                            <input type="file" id="imagem" name="imagem" class="file-upload-input" accept="image/*">
                             <label for="imagem" class="file-upload-label">
-                                <span class="file-upload-icon">📷</span>
-                                <div class="file-upload-text">
-                                    <strong>Clique para selecionar uma imagem</strong>
-                                    <div class="file-upload-hint">JPG, PNG, GIF ou WebP (máx. 5MB)</div>
-                                </div>
+                                <span class="file-upload-icon">🖼️</span>
+                                <span class="file-upload-text">Arraste e solte ou clique para selecionar uma imagem</span>
+                                <span class="file-upload-hint">JPG, PNG, GIF ou WebP (Máx. 5MB)</span>
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        <textarea id="descricao" name="descricao" class="form-textarea" 
-                                  placeholder="Descreva detalhadamente o produto, suas características e benefícios..." required></textarea>
+                        <input type="checkbox" id="destaque" name="destaque" value="1" <?php echo (isset($_POST['destaque']) && $_POST['destaque'] == 1) ? 'checked' : ''; ?>>
+                        <label for="destaque" class="form-label" style="display: inline; margin-left: 10px;">Marcar como Destaque</label>
                     </div>
                     
-                    <button type="submit" class="btn-admin">
+                    <button type="submit" name="adicionar_produto" class="btn-admin">
                         Adicionar Produto
                     </button>
                 </form>
             </div>
 
-            <!-- Painel de Controle -->
-            <div class="admin-card">
+            <!-- Lista de Produtos Cadastrados -->
+            <div class="admin-card products-list">
                 <h2 class="card-title">
-                    <span class="card-icon">⚙️</span>
-                    Painel de Controle
+                    <span class="card-icon">📋</span>
+                    Produtos Cadastrados
                 </h2>
-                
-                <div style="display: flex; flex-direction: column; gap: var(--spacing-lg);">
-                    <button class="btn btn-secondary" onclick="window.location.href='index.php'">
-                        🏠 Ver Site Principal
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='produtos.php'">
-                        📋 Gerenciar Produtos
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
-                        👥 Gerenciar Usuários
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
-                        📊 Relatórios
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
-                        🛒 Pedidos
-                    </button>
-                </div>
-                
-                <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--glass-border);">
-                    <h3 style="color: var(--text-light); margin-bottom: var(--spacing-md);">Ações Rápidas</h3>
-                    <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
-                        <button class="btn btn-primary" style="font-size: 0.9rem; padding: var(--spacing-sm) var(--spacing-md);">
-                            🔄 Sincronizar Estoque
-                        </button>
-                        <button class="btn btn-primary" style="font-size: 0.9rem; padding: var(--spacing-sm) var(--spacing-md);">
-                            📧 Enviar Newsletter
-                        </button>
-                        <button class="btn btn-primary" style="font-size: 0.9rem; padding: var(--spacing-sm) var(--spacing-md);">
-                            🧹 Limpar Cache
-                        </button>
-                    </div>
+                <div style="max-height: 600px; overflow-y: auto;">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Imagem</th>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Destaque</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($produtos_cadastrados)): ?>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-dark);">Nenhum produto cadastrado ainda.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($produtos_cadastrados as $produto): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                                        <td>
+                                            <?php if (!empty($produto['imagem_url'])): ?>
+                                                <img src="<?php echo htmlspecialchars($produto['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>" class="product-image-thumb">
+                                            <?php else: ?>
+                                                <div class="product-image-thumb">N/A</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                                        <td><?php echo htmlspecialchars($produto['categoria_nome']); ?></td>
+                                        <td class="price-cell">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></td>
+                                        <td><?php echo htmlspecialchars($produto['estoque']); ?></td>
+                                        <td><?php echo $produto['destaque'] ? 'Sim' : 'Não'; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-
-        <!-- Lista de Produtos -->
-        <div class="products-list">
-            <h2 class="card-title">
-                <span class="card-icon">📋</span>
-                Produtos Cadastrados
-            </h2>
-            
-            <table class="products-table">
-                <thead>
-                    <tr>
-                        <th>Imagem</th>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Preço</th>
-                        <th>Descrição</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($produtos as $produto): ?>
-                        <tr>
-                            <td>
-                                <div class="product-image-thumb">
-                                    <?php if (!empty($produto['imagem'])): ?>
-                                        <img src="uploads/produtos/<?php echo htmlspecialchars($produto['imagem']); ?>" 
-                                             alt="<?php echo htmlspecialchars($produto['nome']); ?>"
-                                             style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--border-radius-sm);">
-                                    <?php else: ?>
-                                        📷
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                            <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                            <td><?php echo htmlspecialchars($produto['categoria']); ?></td>
-                            <td class="price-cell">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></td>
-                            <td><?php echo htmlspecialchars(substr($produto['descricao'], 0, 50)) . '...'; ?></td>
-                            <td>
-                                <button class="btn btn-secondary" style="font-size: 0.8rem; padding: var(--spacing-xs) var(--spacing-sm);">
-                                    ✏️ Editar
-                                </button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
         </div>
     </main>
 
@@ -640,68 +610,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </footer>
 
-    <script>
-        // Atualizar label do upload quando arquivo for selecionado
-        document.getElementById('imagem').addEventListener('change', function(e) {
-            const label = document.querySelector('.file-upload-label');
-            const file = e.target.files[0];
-            
-            if (file) {
-                label.innerHTML = `
-                    <span class="file-upload-icon">✅</span>
-                    <div class="file-upload-text">
-                        <strong>${file.name}</strong>
-                        <div class="file-upload-hint">Arquivo selecionado (${(file.size / 1024 / 1024).toFixed(2)} MB)</div>
-                    </div>
-                `;
-                label.style.borderColor = 'var(--success-color)';
-                label.style.background = 'rgba(40, 167, 69, 0.1)';
-            }
-        });
+    <!-- Chatbot -->
+    <div class="chatbot-container">
+        <button class="chatbot-toggle">💬</button>
+        <div class="chatbot-window">
+            <div class="chatbot-header">
+                <h4>🤖 Assistente Virtual</h4>
+                <button class="chatbot-close">×</button>
+            </div>
+            <div class="chatbot-messages">
+                <div style="color: #ffffff; margin-bottom: 1rem;">
+                    Olá! 👋 Sou seu assistente virtual. Como posso ajudá-lo hoje?
+                </div>
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" class="chatbot-input" placeholder="Digite sua mensagem...">
+                <button class="chatbot-send">➤</button>
+            </div>
+        </div>
+    </div>
 
-        // Validação em tempo real do preço
-        document.getElementById('preco').addEventListener('input', function(e) {
-            const value = parseFloat(e.target.value);
-            if (value < 0) {
-                e.target.style.borderColor = 'var(--danger-color)';
-            } else {
-                e.target.style.borderColor = '';
-            }
-        });
-
-        // Contador de caracteres para descrição
-        const descricaoTextarea = document.getElementById('descricao');
-        const maxLength = 1000;
-        
-        descricaoTextarea.addEventListener('input', function(e) {
-            const length = e.target.value.length;
-            const remaining = maxLength - length;
-            
-            if (!document.querySelector('.char-counter')) {
-                const counter = document.createElement('div');
-                counter.className = 'char-counter';
-                counter.style.cssText = `
-                    font-size: 0.8rem;
-                    color: var(--text-muted);
-                    text-align: right;
-                    margin-top: var(--spacing-xs);
-                `;
-                e.target.parentNode.appendChild(counter);
-            }
-            
-            const counter = document.querySelector('.char-counter');
-            counter.textContent = `${length}/${maxLength} caracteres`;
-            
-            if (remaining < 50) {
-                counter.style.color = 'var(--warning-color)';
-            } else if (remaining < 0) {
-                counter.style.color = 'var(--danger-color)';
-            } else {
-                counter.style.color = 'var(--text-muted)';
-            }
-        });
-    </script>
-    
+    <!-- Scripts -->
     <script src="animations.js"></script>
 </body>
 </html>

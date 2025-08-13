@@ -9,6 +9,8 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    // Permite bind de LIMIT/OFFSET e melhora compatibilidade com MySQL
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 } catch (PDOException $e) {
     die("Erro na conexão: " . $e->getMessage());
 }
@@ -49,9 +51,10 @@ function obterProdutosDestaque($limite = 6) {
             LEFT JOIN categorias c ON p.categoria_id = c.id 
             WHERE p.ativo = 1 AND p.destaque = 1 
             ORDER BY p.data_criacao DESC 
-            LIMIT ?
+            LIMIT :limite
         ");
-        $stmt->execute([$limite]);
+        $stmt->bindParam(":limite", $limite, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll();
         
     } catch (PDOException $e) {
@@ -102,7 +105,9 @@ function obterCategorias() {
 /**
  * Função para adicionar produto
  */
-function adicionarProduto($nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = '', $especificacoes_json = '', $destaque = 0) {
+function adicionarProduto($nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = 
+null, $especificacoes_json = 
+null, $destaque = 0) {
     global $pdo;
     
     try {
@@ -189,7 +194,11 @@ function adicionarAvaliacao($produto_id, $usuario_id, $nota, $comentario) {
 /**
  * Função para registrar usuário
  */
-function registrarUsuario($nome, $email, $senha, $telefone = '', $endereco = '', $cidade = '', $cep = '') {
+function registrarUsuario($nome, $email, $senha, $telefone = 
+null, $endereco = 
+null, $cidade = 
+null, $cep = 
+null) {
     global $pdo;
     
     try {
@@ -202,7 +211,7 @@ function registrarUsuario($nome, $email, $senha, $telefone = '', $endereco = '',
         
         $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("
-            INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, cep, tipo_usuario, ativo, data_registro) 
+            INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, cep, tipo_usuario, ativo, data_cadastro) 
             VALUES (?, ?, ?, ?, ?, ?, ?, 'cliente', 1, NOW())
         ");
         $stmt->execute([$nome, $email, $senhaHash, $telefone, $endereco, $cidade, $cep]);
@@ -225,10 +234,10 @@ function autenticarUsuario($email, $senha) {
         $stmt->execute([$email]);
         $usuario = $stmt->fetch();
         
-        if ($usuario && password_verify($senha, $usuario['senha'])) {
+        if ($usuario && password_verify($senha, $usuario["senha"])) {
             // Atualizar último login
             $stmt = $pdo->prepare("UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?");
-            $stmt->execute([$usuario['id']]);
+            $stmt->execute([$usuario["id"]]);
             
             return $usuario;
         }
@@ -288,7 +297,7 @@ function alterarSenhaUsuario($usuarioId, $senhaAtual, $novaSenha) {
         $stmt->execute([$usuarioId]);
         $usuario = $stmt->fetch();
         
-        if (!$usuario || !password_verify($senhaAtual, $usuario['senha'])) {
+        if (!$usuario || !password_verify($senhaAtual, $usuario["senha"])) {
             return false;
         }
         
@@ -321,7 +330,7 @@ function obterEstatisticasUsuarios() {
         
         // Usuários registrados hoje
         $stmt = $pdo->prepare("SELECT COUNT(*) as hoje FROM usuarios 
-                              WHERE DATE(data_registro) = CURDATE() AND ativo = 1");
+                              WHERE DATE(data_cadastro) = CURDATE() AND ativo = 1");
         $stmt->execute();
         $stats['usuarios_hoje'] = $stmt->fetch()['hoje'];
         
@@ -365,9 +374,9 @@ function listarUsuarios($limite = 50, $offset = 0) {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("SELECT id, nome, email, telefone, data_registro, ultimo_login, 
+        $stmt = $pdo->prepare("SELECT id, nome, email, telefone, data_cadastro, ultimo_login, 
                               tipo_usuario, ativo FROM usuarios 
-                              ORDER BY data_registro DESC LIMIT ? OFFSET ?");
+                              ORDER BY data_cadastro DESC LIMIT ? OFFSET ?");
         $stmt->execute([$limite, $offset]);
         return $stmt->fetchAll();
         
@@ -461,7 +470,7 @@ function obterEstatisticasProdutos() {
         return $stats;
         
     } catch (PDOException $e) {
-        error_log("Erro ao obter estatísticas de produtos: " . $e->getMessage());
+        error_log("Erro ao obter estatísticas: " . $e->getMessage());
         return [];
     }
 }
@@ -469,7 +478,9 @@ function obterEstatisticasProdutos() {
 /**
  * Função para atualizar produto
  */
-function atualizarProduto($id, $nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = '', $especificacoes_json = '', $destaque = 0) {
+function atualizarProduto($id, $nome, $descricao_curta, $descricao_longa, $preco, $categoria_id, $estoque, $imagem_url = 
+null, $especificacoes_json = 
+null, $destaque = 0) {
     global $pdo;
     
     try {
@@ -508,7 +519,8 @@ function removerProduto($id) {
 /**
  * Função para adicionar categoria
  */
-function adicionarCategoria($nome, $descricao = '') {
+function adicionarCategoria($nome, $descricao = 
+null) {
     global $pdo;
     
     try {
@@ -563,5 +575,6 @@ function buscarProdutos($termo, $categoria_id = null, $preco_min = null, $preco_
         return [];
     }
 }
+
 ?>
 

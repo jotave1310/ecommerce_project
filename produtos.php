@@ -135,7 +135,7 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
             font-weight: 500;
             font-size: 0.9rem;
         }
-
+        
         .filter-input, .filter-select {
             padding: var(--spacing-md);
             background: rgba(255, 255, 255, 0.08);
@@ -145,10 +145,6 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
             font-size: 0.95rem;
             transition: all var(--transition-normal);
             backdrop-filter: blur(10px);
-        }
-
-        .filter-select option{
-            color: black;
         }
         
         .filter-input:focus, .filter-select:focus {
@@ -462,7 +458,7 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
                     <div class="filter-group">
                         <label class="filter-label">Categoria</label>
                         <select name="categoria" class="filter-select">
-                            <option value="" style="color: black;">Todas as categorias</option>
+                            <option value="">Todas as categorias</option>
                             <?php foreach ($categorias as $categoria): ?>
                                 <option value="<?php echo htmlspecialchars($categoria['nome']); ?>" 
                                         <?php echo $categoria_filtro === $categoria['nome'] ? 'selected' : ''; ?>>
