@@ -144,7 +144,7 @@ function formatarPreco($preco) {
             font-weight: 500;
             font-size: 0.9rem;
         }
-
+        
         .filter-input, .filter-select {
             padding: var(--spacing-md);
             background: rgba(255, 255, 255, 0.08);
@@ -154,10 +154,6 @@ function formatarPreco($preco) {
             font-size: 0.95rem;
             transition: all var(--transition-normal);
             backdrop-filter: blur(10px);
-        }
-
-        .filter-select option{
-            color: black;
         }
         
         .filter-input:focus, .filter-select:focus {
