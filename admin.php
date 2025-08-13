@@ -1,12 +1,129 @@
 <?php
 session_start();
+require_once 'db_connect.php';
 
-// Simulação de verificação de admin (em produção, usar sistema de autenticação real)
-$isAdmin = true; // Para demonstração
+// Verificar se o usuário é admin
+if (!isset($_SESSION['usuario_id']) || !verificarAdmin($_SESSION['usuario_id'])) {
+    header('Location: login.php');
+    exit;
+}
 
-// Função para fazer upload de imagem
-function uploadImagem($arquivo) {
-    $uploadDir = 'uploads/produtos/';
+$mensagem = '';
+$tipo_mensagem = '';
+
+// Obter categorias para o formulário
+$categorias = obterCategorias();
+
+// Obter produtos do banco de dados
+$produtos = obterTodosProdutos();
+
+// Processar formulário de adição de produto
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nome = trim($_POST['nome'] ?? '');
+    $categoria_id = intval($_POST['categoria'] ?? 0);
+    $preco = floatval($_POST['preco'] ?? 0);
+    $descricao_curta = trim($_POST['descricao_curta'] ?? '');
+    $descricao_longa = trim($_POST['descricao_longa'] ?? '');
+    $estoque = intval($_POST['estoque'] ?? 0);
+    $destaque = isset($_POST['destaque']) ? 1 : 0;
+    
+    // Processar especificações técnicas
+    $especificacoes = [];
+    if (!empty($_POST['spec_key'])) {
+        foreach ($_POST['spec_key'] as $index => $key) {
+            $key = trim($key);
+            $value = trim($_POST['spec_value'][$index] ?? '');
+            
+            if (!empty($key) && !empty($value)) {
+                $especificacoes[$key] = $value;
+            }
+        }
+    }
+    $especificacoes_json = json_encode($especificacoes);
+    
+    // Validar dados
+    if (empty($nome) || $categoria_id <= 0 || $preco <= 0 || empty($descricao_curta) || $estoque < 0) {
+        $mensagem = "Por favor, preencha todos os campos obrigatórios corretamente.";
+        $tipo_mensagem = "error";
+    } else {
+        try {
+            // Primeiro adiciona o produto sem imagem para obter o ID
+            $produto_id = adicionarProduto(
+                $nome, 
+                $descricao_curta, 
+                $descricao_longa, 
+                $preco, 
+                $categoria_id, 
+                $estoque, 
+                '', // Imagem inicialmente vazia
+                $especificacoes_json, // Especificações JSON
+                $destaque
+            );
+            
+            if ($produto_id) {
+                // Array para armazenar caminhos das imagens
+                $imagens = [];
+                
+                // Processar upload das 4 imagens
+                for ($i = 1; $i <= 4; $i++) {
+                    $field_name = "imagem_$i";
+                    
+                    if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] !== UPLOAD_ERR_NO_FILE) {
+                        $uploadResult = uploadImagemProduto($_FILES[$field_name], $produto_id, $nome, $i);
+                        
+                        if ($uploadResult['success']) {
+                            $imagens[$i] = $uploadResult['filepath'];
+                        } else {
+                            $mensagem .= $uploadResult['message'] . " ";
+                            $tipo_mensagem = "error";
+                        }
+                    }
+                }
+                
+                // Se temos pelo menos 1 imagem (a capa)
+                if (!empty($imagens)) {
+                    // A primeira imagem é sempre a capa
+                    $imagem_capa = $imagens[1] ?? '';
+                    
+                    // Criar JSON com todas as imagens
+                    $imagens_json = json_encode($imagens);
+                    
+                    // Atualizar o produto com os caminhos das imagens
+                    $stmt = $pdo->prepare("UPDATE produtos SET imagem_url = ?, imagens_extras = ? WHERE id = ?");
+                    $stmt->execute([$imagem_capa, $imagens_json, $produto_id]);
+                }
+                
+                if (empty($mensagem)) {
+                    $mensagem = "Produto adicionado com sucesso!";
+                    $tipo_mensagem = "success";
+                    
+                    // Recarregar produtos para mostrar o novo
+                    $produtos = obterTodosProdutos();
+                }
+            } else {
+                $mensagem = "Erro ao adicionar produto no banco de dados.";
+                $tipo_mensagem = "error";
+            }
+        } catch (Exception $e) {
+            $mensagem = "Erro: " . $e->getMessage();
+            $tipo_mensagem = "error";
+        }
+    }
+}
+
+// Função para fazer upload de imagem e criar pasta
+function uploadImagemProduto($arquivo, $produto_id, $nome_produto, $numero_imagem) {
+    // Criar nome de pasta segura
+    $nome_pasta = preg_replace('/[^a-z0-9]+/', '_', strtolower($nome_produto)) . $produto_id;
+    $uploadDir = 'uploads/produtos/' . $nome_pasta . '/';
+    
+    // Criar diretório se não existir
+    if (!file_exists($uploadDir)) {
+        if (!mkdir($uploadDir, 0755, true)) {
+            return ['success' => false, 'message' => 'Erro ao criar diretório para o produto.'];
+        }
+    }
+    
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     $maxSize = 5 * 1024 * 1024; // 5MB
     
@@ -23,81 +140,19 @@ function uploadImagem($arquivo) {
     }
     
     $extension = pathinfo($arquivo['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('produto_') . '.' . $extension;
+    $filename = "img_{$numero_imagem}_" . uniqid() . '.' . $extension;
     $filepath = $uploadDir . $filename;
     
     if (move_uploaded_file($arquivo['tmp_name'], $filepath)) {
-        return ['success' => true, 'filename' => $filename, 'filepath' => $filepath];
+        return ['success' => true, 'filepath' => $filepath];
     } else {
         return ['success' => false, 'message' => 'Erro ao salvar o arquivo.'];
     }
 }
 
-// Produtos de exemplo (simulando banco de dados)
-$produtos = [
-    [
-        'id' => 1,
-        'nome' => 'Smartphone Samsung Galaxy S24',
-        'categoria' => 'Eletrônicos',
-        'preco' => 899.99,
-        'descricao' => 'Smartphone premium com tela Dynamic AMOLED de 6.1 polegadas',
-        'imagem' => 'produto_1.jpg'
-    ],
-    [
-        'id' => 2,
-        'nome' => 'Notebook Dell Inspiron 15 3000',
-        'categoria' => 'Informática',
-        'preco' => 2499.99,
-        'descricao' => 'Notebook para uso profissional com processador Intel Core i5',
-        'imagem' => 'produto_2.jpg'
-    ]
-];
-
-$mensagem = '';
-$tipo_mensagem = '';
-
-// Processar formulário
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome = trim($_POST['nome'] ?? '');
-    $categoria = trim($_POST['categoria'] ?? '');
-    $preco = floatval($_POST['preco'] ?? 0);
-    $descricao = trim($_POST['descricao'] ?? '');
-    
-    // Validar dados
-    if (empty($nome) || empty($categoria) || $preco <= 0 || empty($descricao)) {
-        $mensagem = "Por favor, preencha todos os campos corretamente.";
-        $tipo_mensagem = "error";
-    } else {
-        $imagemPath = '';
-        
-        // Processar upload de imagem se fornecida
-        if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $uploadResult = uploadImagem($_FILES['imagem']);
-            if ($uploadResult['success']) {
-                $imagemPath = $uploadResult['filename'];
-            } else {
-                $mensagem = $uploadResult['message'];
-                $tipo_mensagem = "error";
-            }
-        }
-        
-        if (empty($mensagem)) {
-            // Simular adição ao banco de dados
-            $novoProduto = [
-                'id' => count($produtos) + 1,
-                'nome' => $nome,
-                'categoria' => $categoria,
-                'preco' => $preco,
-                'descricao' => $descricao,
-                'imagem' => $imagemPath
-            ];
-            
-            $produtos[] = $novoProduto;
-            $mensagem = "Produto adicionado com sucesso!";
-            $tipo_mensagem = "success";
-        }
-    }
-}
+// Obter estatísticas
+$stats_produtos = obterEstatisticasProdutos();
+$stats_usuarios = obterEstatisticasUsuarios();
 ?>
 
 <!DOCTYPE html>
@@ -108,6 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Painel Administrativo - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .admin-container {
@@ -442,7 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <ul>
                         <li><a href="index.php">Início</a></li>
                         <li><a href="produtos.php">Produtos</a></li>
-                        <li><a href="admin_new.php">Admin</a></li>
+                        <li><a href="admin_new.php" class="active">Admin</a></li>
                         <li><a href="logout.php">Sair</a></li>
                     </ul>
                 </nav>
@@ -465,20 +521,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Estatísticas -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-number"><?php echo count($produtos); ?></span>
+                <span class="stat-number"><?= $stats_produtos['total_produtos'] ?? 0 ?></span>
                 <span class="stat-label">Produtos Cadastrados</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number">R$ <?php echo number_format(array_sum(array_column($produtos, 'preco')), 2, ',', '.'); ?></span>
+                <span class="stat-number">R$ <?= number_format($stats_produtos['valor_total_estoque'] ?? 0, 2, ',', '.') ?></span>
                 <span class="stat-label">Valor Total Estoque</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number"><?php echo count(array_unique(array_column($produtos, 'categoria'))); ?></span>
-                <span class="stat-label">Categorias Ativas</span>
+                <span class="stat-number"><?= $stats_produtos['produtos_destaque'] ?? 0 ?></span>
+                <span class="stat-label">Produtos em Destaque</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number">98%</span>
-                <span class="stat-label">Taxa de Satisfação</span>
+                <span class="stat-number"><?= $stats_usuarios['total_usuarios'] ?? 0 ?></span>
+                <span class="stat-label">Usuários Registrados</span>
             </div>
         </div>
 
@@ -501,12 +557,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="categoria" class="form-label">Categoria</label>
                         <select id="categoria" name="categoria" class="form-select" required>
                             <option value="">Selecione uma categoria</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Informática">Informática</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Áudio">Áudio</option>
-                            <option value="Casa e Jardim">Casa e Jardim</option>
-                            <option value="Esportes">Esportes</option>
+                            <?php foreach ($categorias as $categoria): ?>
+                                <option value="<?= $categoria['id'] ?>">
+                                    <?= htmlspecialchars($categoria['nome']) ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
@@ -517,24 +572,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="form-group">
-                        <label for="imagem" class="form-label">Imagem do Produto</label>
-                        <div class="file-upload-container">
-                            <input type="file" id="imagem" name="imagem" class="file-upload-input" 
-                                   accept="image/jpeg,image/png,image/gif,image/webp">
-                            <label for="imagem" class="file-upload-label">
+                        <label for="estoque" class="form-label">Quantidade em Estoque</label>
+                        <input type="number" id="estoque" name="estoque" class="form-input" 
+                               min="0" placeholder="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao_curta" class="form-label">Descrição Curta</label>
+                        <textarea id="descricao_curta" name="descricao_curta" class="form-textarea" 
+                                  placeholder="Descrição resumida para listagens..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao_longa" class="form-label">Descrição Longa</label>
+                        <textarea id="descricao_longa" name="descricao_longa" class="form-textarea" 
+                                  placeholder="Descrição detalhada do produto..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Especificações Técnicas</label>
+                        <div id="especificacoes-container">
+                            <div class="spec-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <input type="text" name="spec_key[]" placeholder="Nome (ex: Memória RAM)" 
+                                       class="form-input" style="flex: 1;">
+                                <input type="text" name="spec_value[]" placeholder="Valor (ex: 8GB)" 
+                                       class="form-input" style="flex: 1;">
+                                <button type="button" class="btn btn-danger remove-spec" style="padding: 10px;">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" id="add-spec" class="btn btn-secondary" style="margin-top: 10px;">
+                            ➕ Adicionar Especificação
+                        </button>
+                    </div>
+                    
+                    <!-- Substituir o campo de imagem atual por: -->
+                    <div class="form-group">
+                        <label class="form-label">Imagens do Produto</label>
+                        
+                        <!-- Imagem Capa (obrigatória) -->
+                        <div class="file-upload-container" style="margin-bottom: 15px;">
+                            <label class="form-label">Imagem Capa (Principal)</label>
+                            <input type="file" name="imagens[]" class="file-upload-input" required accept="image/*">
+                            <label for="imagens[]" class="file-upload-label">
                                 <span class="file-upload-icon">📷</span>
                                 <div class="file-upload-text">
-                                    <strong>Clique para selecionar uma imagem</strong>
+                                    <strong>Clique para selecionar a imagem capa</strong>
                                     <div class="file-upload-hint">JPG, PNG, GIF ou WebP (máx. 5MB)</div>
                                 </div>
                             </label>
                         </div>
+                        
+                        <!-- Imagens Extras (opcionais) -->
+                        <div class="file-upload-container" style="margin-bottom: 15px;">
+                            <label class="form-label">Imagem Extra 1</label>
+                            <input type="file" name="imagens[]" class="file-upload-input" accept="image/*">
+                            <label for="imagens[]" class="file-upload-label">
+                                <span class="file-upload-icon">📷</span>
+                                <div class="file-upload-text">
+                                    <strong>Clique para selecionar imagem extra</strong>
+                                    <div class="file-upload-hint">Opcional</div>
+                                </div>
+                            </label>
+                        </div>
+
+                         <!-- Imagens Extras (opcionais) -->
+                        <div class="file-upload-container" style="margin-bottom: 15px;">
+                            <label class="form-label">Imagem Extra 2</label>
+                            <input type="file" name="imagens[]" class="file-upload-input" accept="image/*">
+                            <label for="imagens[]" class="file-upload-label">
+                                <span class="file-upload-icon">📷</span>
+                                <div class="file-upload-text">
+                                    <strong>Clique para selecionar imagem extra</strong>
+                                    <div class="file-upload-hint">Opcional</div>
+                                </div>
+                            </label>
+                        </div>
+
+                         <!-- Imagens Extras (opcionais) -->
+                        <div class="file-upload-container" style="margin-bottom: 15px;">
+                            <label class="form-label">Imagem Extra 3</label>
+                            <input type="file" name="imagens[]" class="file-upload-input" accept="image/*">
+                            <label for="imagens[]" class="file-upload-label">
+                                <span class="file-upload-icon">📷</span>
+                                <div class="file-upload-text">
+                                    <strong>Clique para selecionar imagem extra</strong>
+                                    <div class="file-upload-hint">Opcional</div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Repetir para Imagem Extra 2 e 3 -->
                     </div>
                     
-                    <div class="form-group">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        <textarea id="descricao" name="descricao" class="form-textarea" 
-                                  placeholder="Descreva detalhadamente o produto, suas características e benefícios..." required></textarea>
+                    <div class="form-group" style="display: flex; align-items: center; gap: var(--spacing-md);">
+                        <input type="checkbox" id="destaque" name="destaque" value="1">
+                        <label for="destaque" class="form-label" style="margin-bottom: 0;">Destacar este produto</label>
                     </div>
                     
                     <button type="submit" class="btn-admin">
@@ -555,15 +689,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         🏠 Ver Site Principal
                     </button>
                     <button class="btn btn-secondary" onclick="window.location.href='produtos.php'">
-                        📋 Gerenciar Produtos
+                        📋 Ver Todos Produtos
                     </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
+                    <button class="btn btn-secondary" onclick="window.location.href='gerenciar_usuarios.php'">
                         👥 Gerenciar Usuários
                     </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
+                    <button class="btn btn-secondary" onclick="window.location.href='relatorios.php'">
                         📊 Relatórios
                     </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='#'">
+                    <button class="btn btn-secondary" onclick="window.location.href='pedidos.php'">
                         🛒 Pedidos
                     </button>
                 </div>
@@ -589,41 +723,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="products-list">
             <h2 class="card-title">
                 <span class="card-icon">📋</span>
-                Produtos Cadastrados
+                Produtos Cadastrados (<?= count($produtos) ?>)
             </h2>
             
             <table class="products-table">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Imagem</th>
                         <th>Nome</th>
                         <th>Categoria</th>
                         <th>Preço</th>
-                        <th>Descrição</th>
+                        <th>Estoque</th>
+                        <th>Destaque</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($produtos as $produto): ?>
                         <tr>
+                            <td><?= $produto['id'] ?></td>
                             <td>
                                 <div class="product-image-thumb">
-                                    <?php if (!empty($produto['imagem'])): ?>
-                                        <img src="uploads/produtos/<?php echo htmlspecialchars($produto['imagem']); ?>" 
-                                             alt="<?php echo htmlspecialchars($produto['nome']); ?>"
+                                    <?php if (!empty($produto['imagem_url'])): ?>
+                                        <img src="<?= htmlspecialchars($produto['imagem_url']) ?>" 
+                                             alt="<?= htmlspecialchars($produto['nome']) ?>"
                                              style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--border-radius-sm);">
                                     <?php else: ?>
                                         📷
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                            <td><?php echo htmlspecialchars($produto['categoria']); ?></td>
-                            <td class="price-cell">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></td>
-                            <td><?php echo htmlspecialchars(substr($produto['descricao'], 0, 50)) . '...'; ?></td>
+                            <td><?= htmlspecialchars($produto['nome']) ?></td>
                             <td>
-                                <button class="btn btn-secondary" style="font-size: 0.8rem; padding: var(--spacing-xs) var(--spacing-sm);">
+                                <?php 
+                                    $categoria_nome = '';
+                                    foreach ($categorias as $cat) {
+                                        if ($cat['id'] == $produto['categoria_id']) {
+                                            $categoria_nome = htmlspecialchars($cat['nome']);
+                                            break;
+                                        }
+                                    }
+                                    echo $categoria_nome;
+                                ?>
+                            </td>
+                            <td class="price-cell">R$ <?= number_format($produto['preco'], 2, ',', '.') ?></td>
+                            <td><?= $produto['estoque'] ?></td>
+                            <td><?= $produto['destaque'] ? '⭐ Sim' : 'Não' ?></td>
+                            <td>
+                                <button class="btn btn-secondary" 
+                                        onclick="window.location.href='editar_produto.php?id=<?= $produto['id'] ?>'"
+                                        style="font-size: 0.8rem; padding: var(--spacing-xs) var(--spacing-sm);">
                                     ✏️ Editar
+                                </button>
+                                <button class="btn btn-danger" 
+                                        onclick="if(confirm('Tem certeza que deseja remover este produto?')) window.location.href='remover_produto.php?id=<?= $produto['id'] ?>'"
+                                        style="font-size: 0.8rem; padding: var(--spacing-xs) var(--spacing-sm);">
+                                    🗑️ Remover
                                 </button>
                             </td>
                         </tr>
@@ -636,7 +792,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
@@ -670,8 +826,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         // Contador de caracteres para descrição
-        const descricaoTextarea = document.getElementById('descricao');
-        const maxLength = 1000;
+        const descricaoTextarea = document.getElementById('descricao_longa');
+        const maxLength = 2000;
         
         descricaoTextarea.addEventListener('input', function(e) {
             const length = e.target.value.length;
@@ -699,6 +855,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 counter.style.color = 'var(--text-muted)';
             }
+        });
+
+        // Adicionar e remover campos de especificações
+        document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar nova linha de especificação
+            document.getElementById('add-spec').addEventListener('click', function() {
+                const container = document.getElementById('especificacoes-container');
+                const newRow = document.createElement('div');
+                newRow.className = 'spec-row';
+                newRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px;';
+                newRow.innerHTML = `
+                    <input type="text" name="spec_key[]" placeholder="Nome (ex: Memória RAM)" 
+                           class="form-input" style="flex: 1;">
+                    <input type="text" name="spec_value[]" placeholder="Valor (ex: 8GB)" 
+                           class="form-input" style="flex: 1;">
+                    <button type="button" class="btn btn-danger remove-spec" style="padding: 10px;">
+                        🗑️
+                    </button>
+                `;
+                container.appendChild(newRow);
+            });
+
+            // Remover linha de especificação
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-spec')) {
+                    e.target.closest('.spec-row').remove();
+                }
+            });
         });
     </script>
     

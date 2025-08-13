@@ -68,8 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - E-commerce Project</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
 </head>
 <body>
     <header>
@@ -94,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo count($_SESSION['cart'] ?? []); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo count($_SESSION['cart'] ?? []); ?>)
                 </a>
             </div>
         </div>
@@ -132,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
                 <!-- Tab Dados Pessoais -->
                 <div class="tab-content active" id="dados-tab">
                     <div class="feature-card">
-                        <div class="feature-icon">👤</div>
+                        <div class="feature-icon"><i class="fa-solid fa-user"></i></div>
                         <h3 class="feature-title">Informações Pessoais</h3>
                         
                         <form method="POST" style="margin-top: 2rem;">
@@ -176,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
                 <!-- Tab Alterar Senha -->
                 <div class="tab-content" id="senha-tab">
                     <div class="feature-card">
-                        <div class="feature-icon">🔒</div>
+                        <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
                         <h3 class="feature-title">Alterar Senha</h3>
                         
                         <form method="POST" style="margin-top: 2rem;">
@@ -205,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
                 <!-- Tab Meus Pedidos -->
                 <div class="tab-content" id="pedidos-tab">
                     <div class="feature-card">
-                        <div class="feature-icon">📦</div>
+                        <div class="feature-icon"><i class="fa-solid fa-box-open"></i></div>
                         <h3 class="feature-title">Histórico de Pedidos</h3>
                         
                         <?php
@@ -214,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
                         if (empty($pedidos)):
                         ?>
                             <div class="empty-state">
-                                <div class="empty-icon">🛍️</div>
+                                <div class="empty-icon"><i class="fa-solid fa-shop-slash"></i></div>
                                 <h4 class="empty-title">Nenhum pedido encontrado</h4>
                                 <p class="empty-description">Você ainda não fez nenhum pedido. Que tal dar uma olhada em nossos produtos?</p>
                                 <a href="produtos.php" class="btn btn-primary">Ver Produtos</a>
@@ -276,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['alterar_senha'])) {
     <footer>
         <div class="container">
             <p>&copy; 2024 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 

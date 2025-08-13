@@ -1,33 +1,40 @@
 <?php
 session_start();
-require_once 'db_connect.php'; // Incluir o arquivo de conexão com o banco de dados
+require_once 'db_connect.php';
 
-// Inicializar carrinho se não existir
+// Inicializar carrinho
 if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = array();
+    $_SESSION['cart'] = [];
 }
 
-// Obter todos os produtos do banco de dados
-$produtos = obterTodosProdutos();
-
-// Obter categorias únicas do banco de dados
+// Obter categorias para o filtro
 $categorias = obterCategorias();
 
-// Filtros
-$categoria_filtro = $_GET['categoria'] ?? '';
-$preco_min = isset($_GET['preco_min']) ? floatval($_GET['preco_min']) : 0;
-$preco_max = isset($_GET['preco_max']) ? floatval($_GET['preco_max']) : 999999;
+// Parâmetros de filtro com valores padrão
 $busca = $_GET['busca'] ?? '';
+$categoria_id = $_GET['categoria'] ?? '';
+$preco_min = isset($_GET['preco_min']) && is_numeric($_GET['preco_min']) ? floatval($_GET['preco_min']) : null;
+$preco_max = isset($_GET['preco_max']) && is_numeric($_GET['preco_max']) ? floatval($_GET['preco_max']) : null;
 
-// Aplicar filtros
-$produtos_filtrados = array_filter($produtos, function($produto) use ($categoria_filtro, $preco_min, $preco_max, $busca) {
-    $categoria_ok = empty($categoria_filtro) || $produto['categoria_nome'] === $categoria_filtro;
-    $preco_ok = $produto['preco'] >= $preco_min && $produto['preco'] <= $preco_max;
-    $busca_ok = empty($busca) || stripos($produto['nome'], $busca) !== false || stripos($produto['descricao'], $busca) !== false;
-    
-    return $categoria_ok && $preco_ok && $busca_ok;
-});
+// Ajustar valores vazios para null
+if ($preco_min === 0.0) $preco_min = null;
+if ($preco_max === 0.0) $preco_max = null;
 
+// Buscar produtos com filtros aplicados
+$produtos = buscarProdutos($busca, $categoria_id, $preco_min, $preco_max);
+
+// Função para formatar preço
+function formatarPreco($preco) {
+    return 'R$ ' . number_format($preco, 2, ',', '.');
+}
+
+// Debug: Exibir parâmetros de filtro (remover em produção)
+// echo "<pre>Filtros aplicados:\n";
+// echo "Busca: " . htmlspecialchars($busca) . "\n";
+// echo "Categoria ID: " . htmlspecialchars($categoria_id) . "\n";
+// echo "Preço min: " . ($preco_min ?? 'null') . "\n";
+// echo "Preço max: " . ($preco_max ?? 'null') . "\n";
+// echo "Produtos encontrados: " . count($produtos) . "</pre>";
 ?>
 
 <!DOCTYPE html>
@@ -38,6 +45,8 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
     <title>Produtos - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .products-container {
@@ -275,19 +284,27 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
         
         .product-image {
             width: 100%;
-            height: 200px;
+            aspect-ratio: 1/1; /* Mantém proporção quadrada (ajuste conforme necessidade) */
             background: linear-gradient(135deg, var(--card-bg), var(--dark-bg));
             border-radius: var(--border-radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             margin-bottom: var(--spacing-lg);
-            color: var(--text-muted);
-            font-size: 0.9rem;
             position: relative;
             overflow: hidden;
         }
-        
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Mantém toda a imagem visível */
+            object-position: center;
+            transition: transform var(--transition-normal);
+        }
+
+        /* Opcional: Efeito hover suave */
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+                
         .product-category {
             display: inline-block;
             background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
@@ -353,6 +370,7 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
             font-size: 4rem;
             margin-bottom: var(--spacing-lg);
             opacity: 0.5;
+            color: white;
         }
         
         .no-products-title {
@@ -419,11 +437,11 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
                 <nav>
                     <ul>
                         <li><a href="index.php">Início</a></li>
-                        <li><a href="produtos.php">Produtos</a></li>
+                        <li><a href="produtos.php" class="active">Produtos</a></li>
                         <li><a href="sobre.php">Sobre</a></li>
                         <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
-                            <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <li><a href="perfil.php">Meu Perfil</a></li>
                             <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
                                 <li><a href="admin.php">Admin</a></li>
                             <?php endif; ?>
@@ -434,7 +452,7 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>
@@ -443,30 +461,28 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
     <main class="products-container">
         <div class="page-header">
             <h1 class="page-title">Catálogo de Produtos</h1>
-            <p class="page-subtitle">Descubra nossa seleção completa de produtos tecnológicos com a melhor qualidade e preços competitivos</p>
+            <p class="page-subtitle">Descubra nossa seleção completa de produtos tecnológicos</p>
         </div>
 
         <div class="filters-section">
-            <h2 class="filters-title">
-                🔍 Filtros de Busca
-            </h2>
+            <h2 class="filters-title">Filtros de Busca</h2>
             <form method="GET" action="">
                 <div class="filters-grid">
                     <div class="filter-group">
                         <label class="filter-label">Buscar Produto</label>
                         <input type="text" name="busca" class="filter-input" 
                                placeholder="Digite o nome do produto..." 
-                               value="<?php echo htmlspecialchars($busca); ?>">
+                               value="<?= htmlspecialchars($busca) ?>">
                     </div>
                     
                     <div class="filter-group">
                         <label class="filter-label">Categoria</label>
                         <select name="categoria" class="filter-select">
-                            <option value="" style="color: black;">Todas as categorias</option>
+                            <option value="">Todas as categorias</option>
                             <?php foreach ($categorias as $categoria): ?>
-                                <option value="<?php echo htmlspecialchars($categoria['nome']); ?>" 
-                                        <?php echo $categoria_filtro === $categoria['nome'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($categoria['nome']); ?>
+                                <option value="<?= $categoria['id'] ?>" 
+                                    <?= $categoria_id == $categoria['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($categoria['nome']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -476,32 +492,28 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
                         <label class="filter-label">Preço Mínimo (R$)</label>
                         <input type="number" name="preco_min" class="filter-input" 
                                placeholder="0,00" step="0.01" min="0"
-                               value="<?php echo $preco_min > 0 ? $preco_min : ''; ?>">
+                               value="<?= $preco_min !== null ? $preco_min : '' ?>">
                     </div>
                     
                     <div class="filter-group">
                         <label class="filter-label">Preço Máximo (R$)</label>
                         <input type="number" name="preco_max" class="filter-input" 
                                placeholder="999999,00" step="0.01" min="0"
-                               value="<?php echo $preco_max < 999999 ? $preco_max : ''; ?>">
+                               value="<?= $preco_max !== null ? $preco_max : '' ?>">
                     </div>
                 </div>
                 
                 <div class="filter-actions">
-                    <button type="submit" class="btn-filter">
-                        🔍 Aplicar Filtros
-                    </button>
-                    <a href="produtos.php" class="btn-clear">
-                        🗑️ Limpar Filtros
-                    </a>
+                    <button type="submit" class="btn-filter"><i class="fa-solid fa-magnifying-glass"></i> Aplicar Filtros</button>
+                    <a href="produtos.php" class="btn-clear"><i class="fa-solid fa-trash"></i> Limpar Filtros</a>
                 </div>
             </form>
         </div>
 
         <div class="products-stats">
             <div class="products-count">
-                <strong><?php echo count($produtos_filtrados); ?></strong> produto(s) encontrado(s)
-                <?php if (!empty($categoria_filtro) || !empty($busca) || $preco_min > 0 || $preco_max < 999999): ?>
+                <strong><?= count($produtos) ?></strong> produto(s) encontrado(s)
+                <?php if (!empty($categoria_id) || !empty($busca) || $preco_min !== null || $preco_max !== null): ?>
                     com os filtros aplicados
                 <?php endif; ?>
             </div>
@@ -513,44 +525,59 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
             </select>
         </div>
 
-        <?php if (empty($produtos_filtrados)): ?>
+        <?php if (empty($produtos)): ?>
             <div class="no-products">
-                <div class="no-products-icon">📦</div>
+                <div class="no-products-icon" style="color: white;"><i class="fa-solid fa-box-open"></i></div>
                 <h3 class="no-products-title">Nenhum produto encontrado</h3>
                 <p>Tente ajustar os filtros de busca ou navegue por todas as categorias.</p>
-                <a href="produtos.php" class="btn btn-primary" style="margin-top: var(--spacing-lg);">
+                <a href="produtos.php" class="btn btn-primary" style="margin-top: 1rem;">
                     Ver Todos os Produtos
                 </a>
             </div>
         <?php else: ?>
             <div class="products-grid" id="products-grid">
-                <?php foreach ($produtos_filtrados as $produto): ?>
-                    <div class="product-card" data-nome="<?php echo htmlspecialchars($produto['nome']); ?>" 
-                         data-preco="<?php echo $produto['preco']; ?>" 
-                         data-categoria="<?php echo htmlspecialchars($produto['categoria_nome']); ?>">
+                <?php foreach ($produtos as $produto): ?>
+                    <div class="product-card" 
+                         data-nome="<?= htmlspecialchars($produto['nome']) ?>" 
+                         data-preco="<?= $produto['preco'] ?>" 
+                         data-categoria="<?= htmlspecialchars($produto['categoria_nome']) ?>">
+                        
                         <div class="product-image">
                             <?php if (!empty($produto['imagem_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($produto['imagem_url']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                                <img src="<?= htmlspecialchars($produto['imagem_url']) ?>" 
+                                     alt="<?= htmlspecialchars($produto['nome']) ?>">
                             <?php else: ?>
                                 <span>Imagem do Produto</span>
                             <?php endif; ?>
                         </div>
-                        <div class="product-category"><?php echo htmlspecialchars($produto['categoria_nome']); ?></div>
-                        <h3 class="product-title"><?php echo htmlspecialchars($produto['nome']); ?></h3>
-                        <div class="product-price">R$ <?php echo number_format($produto['preco'], 2, ',', '.'); ?></div>
-                        <p class="product-description"><?php echo htmlspecialchars($produto['descricao']); ?></p>
                         
-                        <div class="product-stock <?php echo $produto['estoque'] <= 5 ? ($produto['estoque'] == 0 ? 'out' : 'low') : ''; ?>">
+                        <div class="product-category">
+                            <?= htmlspecialchars($produto['categoria_nome']) ?>
+                        </div>
+                        
+                        <h3 class="product-title">
+                            <?= htmlspecialchars($produto['nome']) ?>
+                        </h3>
+                        
+                        <div class="product-price">
+                            <?= formatarPreco($produto['preco']) ?>
+                        </div>
+                        
+                        <p class="product-description">
+                            <?= htmlspecialchars($produto['descricao_curta']) ?>
+                        </p>
+                        
+                        <div class="product-stock <?= $produto['estoque'] <= 5 ? ($produto['estoque'] == 0 ? 'out' : 'low') : '' ?>">
                             <?php if ($produto['estoque'] == 0): ?>
-                                ❌ Fora de estoque
+                                <i class="fa-solid fa-x"></i> Fora de estoque
                             <?php elseif ($produto['estoque'] <= 5): ?>
-                                ⚠️ Últimas <?php echo $produto['estoque']; ?> unidades
+                                <i class="fa-solid fa-triangle-exclamation"></i> Últimas <?= $produto['estoque'] ?> unidades
                             <?php else: ?>
-                                ✅ Em estoque (<?php echo $produto['estoque']; ?> unidades)
+                                <i class="fa-solid fa-check"></i> Em estoque (<?= $produto['estoque'] ?> unidades)
                             <?php endif; ?>
                         </div>
                         
-                        <a href="produto.php?id=<?php echo $produto['id']; ?>" class="btn btn-primary">
+                        <a href="produto.php?id=<?= $produto['id'] ?>" class="btn btn-primary">
                             Ver Detalhes
                         </a>
                     </div>
@@ -562,124 +589,54 @@ $produtos_filtrados = array_filter($produtos, function($produto) use ($categoria
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
-    <!-- Chatbot -->
-    <div class="chatbot-container">
-        <button class="chatbot-toggle">💬</button>
-        <div class="chatbot-window">
-            <div class="chatbot-header">
-                <h4>🤖 Assistente Virtual</h4>
-                <button class="chatbot-close">×</button>
-            </div>
-            <div class="chatbot-messages">
-                <div style="color: #ffffff; margin-bottom: 1rem;">
-                    Olá! 👋 Posso ajudá-lo a encontrar produtos. Como posso ajudar?
-                </div>
-            </div>
-            <div class="chatbot-input-container">
-                <input type="text" class="chatbot-input" placeholder="Digite sua mensagem...">
-                <button class="chatbot-send">➤</button>
-            </div>
-        </div>
-    </div>
-
     <script>
+        // Função para ordenar produtos
         function sortProducts(sortBy) {
             const grid = document.getElementById('products-grid');
-            const cards = Array.from(grid.children);
+            const cards = Array.from(grid.querySelectorAll('.product-card'));
             
             cards.sort((a, b) => {
+                const aData = a.dataset;
+                const bData = b.dataset;
+                
                 switch(sortBy) {
                     case 'nome':
-                        return a.dataset.nome.localeCompare(b.dataset.nome);
+                        return aData.nome.localeCompare(bData.nome);
                     case 'preco_asc':
-                        return parseFloat(a.dataset.preco) - parseFloat(b.dataset.preco);
+                        return parseFloat(aData.preco) - parseFloat(bData.preco);
                     case 'preco_desc':
-                        return parseFloat(b.dataset.preco) - parseFloat(a.dataset.preco);
+                        return parseFloat(bData.preco) - parseFloat(aData.preco);
                     case 'categoria':
-                        return a.dataset.categoria.localeCompare(b.dataset.categoria);
+                        return aData.categoria.localeCompare(bData.categoria);
                     default:
                         return 0;
                 }
             });
             
             // Remover todos os cards
-            cards.forEach(card => card.remove());
+            while (grid.firstChild) {
+                grid.removeChild(grid.firstChild);
+            }
             
-            // Adicionar cards ordenados com animação
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    grid.appendChild(card);
-                    
-                    setTimeout(() => {
-                        card.style.transition = 'all 0.5s ease-out';
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, 50);
-                }, index * 50);
+            // Adicionar cards ordenados
+            cards.forEach(card => {
+                grid.appendChild(card);
             });
         }
         
-        // Animação de entrada dos produtos
+        // Ativar animações ao carregar a página
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.product-card');
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            
             cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(30px)';
                 card.style.animationDelay = `${index * 0.1}s`;
-                observer.observe(card);
+                card.classList.add('animate-in');
             });
         });
-        
-        // Busca em tempo real
-        const buscaInput = document.querySelector('input[name="busca"]');
-        if (buscaInput) {
-            let timeoutId;
-            buscaInput.addEventListener('input', function() {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => {
-                    const termo = this.value.toLowerCase();
-                    const cards = document.querySelectorAll('.product-card');
-                    
-                    cards.forEach(card => {
-                        const nome = card.dataset.nome.toLowerCase();
-                        const categoria = card.dataset.categoria.toLowerCase();
-                        
-                        if (nome.includes(termo) || categoria.includes(termo)) {
-                            card.style.display = 'block';
-                            card.style.animation = 'fadeInUp 0.3s ease-out';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                    
-                    // Atualizar contador
-                    const visibleCards = document.querySelectorAll('.product-card[style*="display: block"], .product-card:not([style*="display: none"]))');
-                    const counter = document.querySelector('.products-count strong');
-                    if (counter) {
-                        counter.textContent = visibleCards.length;
-                    }
-                }, 300);
-            });
-        }
     </script>
-    
-    <script src="animations.js"></script>
 </body>
 </html>
 

@@ -50,6 +50,7 @@ if (!isset($_SESSION['cart'])        // Processar dados do formulário
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include 'header.php'; ?>
     <title>Finalizar Compra - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -67,7 +68,7 @@ if (!isset($_SESSION['cart'])        // Processar dados do formulário
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo count($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo count($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>

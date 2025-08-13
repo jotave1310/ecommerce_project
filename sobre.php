@@ -15,6 +15,8 @@ if (!isset($_SESSION['cart'])) {
     <title>Sobre - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .about-container {
@@ -414,11 +416,11 @@ if (!isset($_SESSION['cart'])) {
                 <nav>
                     <ul>
                         <li><a href="index.php">Início</a></li>
-                        <li><a href="produtos_new.php">Produtos</a></li>
-                        <li><a href="sobre_new.php">Sobre</a></li>
+                        <li><a href="produtos.php">Produtos</a></li>
+                        <li><a href="sobre.php">Sobre</a></li>
                         <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
-                            <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <li><a href="perfil.php">Meu Perfil</a></li>
                             <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
                                 <li><a href="admin.php">Admin</a></li>
                             <?php endif; ?>
@@ -429,7 +431,7 @@ if (!isset($_SESSION['cart'])) {
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>
@@ -443,7 +445,7 @@ if (!isset($_SESSION['cart'])) {
 
         <div class="about-content">
             <div class="about-section">
-                <span class="section-icon">🚀</span>
+                <span class="section-icon"></span>
                 <h2 class="section-title">Nossa Missão</h2>
                 <p class="section-text">
                     O <strong>E-commerce Project</strong> nasceu com o objetivo de democratizar o acesso à tecnologia de ponta, 
@@ -457,26 +459,26 @@ if (!isset($_SESSION['cart'])) {
             </div>
 
             <div class="about-section">
-                <span class="section-icon">💡</span>
+                <span class="section-icon"></span>
                 <h2 class="section-title">Nossos Valores</h2>
                 <div class="features-grid">
                     <div class="feature-item">
-                        <span class="feature-icon">🎯</span>
+                        <span class="feature-icon"><i class="fa-solid fa-bullseye"></i></span>
                         <h3 class="feature-title">Excelência</h3>
                         <p class="feature-description">Buscamos sempre a perfeição em cada produto e serviço oferecido</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">🤝</span>
+                        <span class="feature-icon"><i class="fa-solid fa-handshake"></i></span>
                         <h3 class="feature-title">Confiança</h3>
                         <p class="feature-description">Construímos relacionamentos duradouros baseados na transparência</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">⚡</span>
+                        <span class="feature-icon"><i class="fa-solid fa-bolt"></i></span>
                         <h3 class="feature-title">Inovação</h3>
                         <p class="feature-description">Estamos sempre na vanguarda das tendências tecnológicas</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">🌟</span>
+                        <span class="feature-icon"><i class="fa-solid fa-medal"></i></i></span>
                         <h3 class="feature-title">Qualidade</h3>
                         <p class="feature-description">Selecionamos apenas produtos que atendem aos mais altos padrões</p>
                     </div>
@@ -484,7 +486,7 @@ if (!isset($_SESSION['cart'])) {
             </div>
 
             <div class="about-section">
-                <span class="section-icon">⚙️</span>
+                <span class="section-icon"></i></span>
                 <h2 class="section-title">Tecnologias Utilizadas</h2>
                 <p class="section-text">
                     Nossa plataforma foi construída utilizando tecnologias modernas e confiáveis, 
@@ -492,42 +494,42 @@ if (!isset($_SESSION['cart'])) {
                 </p>
                 <div class="tech-list">
                     <div class="tech-item">
-                        <span class="tech-icon">🐘</span>
+                        <span class="tech-icon"><i class="fa-brands fa-php"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">PHP 8+</div>
                             <div class="tech-description">Backend robusto e seguro</div>
                         </div>
                     </div>
                     <div class="tech-item">
-                        <span class="tech-icon">🌐</span>
+                        <span class="tech-icon"><i class="fa-brands fa-html5"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">HTML5</div>
                             <div class="tech-description">Estrutura semântica moderna</div>
                         </div>
                     </div>
                     <div class="tech-item">
-                        <span class="tech-icon">🎨</span>
+                        <span class="tech-icon"><i class="fa-brands fa-css"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">CSS3</div>
                             <div class="tech-description">Design responsivo e elegante</div>
                         </div>
                     </div>
                     <div class="tech-item">
-                        <span class="tech-icon">⚡</span>
+                        <span class="tech-icon"><i class="fa-brands fa-js"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">JavaScript</div>
                             <div class="tech-description">Interatividade avançada</div>
                         </div>
                     </div>
                     <div class="tech-item">
-                        <span class="tech-icon">🗄️</span>
+                        <span class="tech-icon"><i class="fa-solid fa-database"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">MySQL</div>
                             <div class="tech-description">Banco de dados confiável</div>
                         </div>
                     </div>
                     <div class="tech-item">
-                        <span class="tech-icon">🔧</span>
+                        <span class="tech-icon"><i class="fa-brands fa-github"></i></span>
                         <div class="tech-info">
                             <div class="tech-name">Git</div>
                             <div class="tech-description">Controle de versão profissional</div>
@@ -537,7 +539,7 @@ if (!isset($_SESSION['cart'])) {
             </div>
 
             <div class="about-section">
-                <span class="section-icon">📊</span>
+                <span class="section-icon"></i></span>
                 <h2 class="section-title">Nossos Números</h2>
                 <p class="section-text">
                     Alguns números que demonstram nosso crescimento e o impacto positivo que temos gerado:
@@ -563,36 +565,36 @@ if (!isset($_SESSION['cart'])) {
             </div>
 
             <div class="about-section">
-                <span class="section-icon">🛠️</span>
+                <span class="section-icon"></i></span>
                 <h2 class="section-title">Funcionalidades da Plataforma</h2>
                 <div class="features-grid">
                     <div class="feature-item">
-                        <span class="feature-icon">🛒</span>
+                        <span class="feature-icon"><i class="fa-solid fa-cart-shopping"></i></span>
                         <h3 class="feature-title">Carrinho Inteligente</h3>
                         <p class="feature-description">Sistema de carrinho com persistência de sessão e cálculos automáticos</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">🔍</span>
+                        <span class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                         <h3 class="feature-title">Busca Avançada</h3>
                         <p class="feature-description">Filtros inteligentes por categoria, preço e características</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">📱</span>
+                        <span class="feature-icon"><i class="fa-solid fa-mobile"></i></span>
                         <h3 class="feature-title">Design Responsivo</h3>
                         <p class="feature-description">Experiência otimizada para todos os dispositivos</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">🔒</span>
+                        <span class="feature-icon"><i class="fa-solid fa-lock"></i></span>
                         <h3 class="feature-title">Segurança Total</h3>
                         <p class="feature-description">Proteção de dados e transações seguras</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">⚡</span>
+                        <span class="feature-icon"><i class="fa-solid fa-chart-line"></i></span>
                         <h3 class="feature-title">Performance</h3>
                         <p class="feature-description">Carregamento rápido e navegação fluida</p>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-icon">🤖</span>
+                        <span class="feature-icon"><i class="fa-solid fa-robot"></i></span>
                         <h3 class="feature-title">Chatbot IA</h3>
                         <p class="feature-description">Assistente virtual para suporte instantâneo</p>
                     </div>
@@ -600,7 +602,7 @@ if (!isset($_SESSION['cart'])) {
             </div>
 
             <div class="about-section">
-                <span class="section-icon">📅</span>
+                <span class="section-icon"><i class="fa-solid fa-calendar-days"></i></span>
                 <h2 class="section-title">Nossa Jornada</h2>
                 <div class="timeline">
                     <div class="timeline-item">
@@ -659,21 +661,21 @@ if (!isset($_SESSION['cart'])) {
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
     <!-- Chatbot -->
     <div class="chatbot-container">
-        <button class="chatbot-toggle">💬</button>
+        <button class="chatbot-toggle"><i class="fa-solid fa-comment-nodes"></i></button>
         <div class="chatbot-window">
             <div class="chatbot-header">
-                <h4>🤖 Assistente Virtual</h4>
+                <h4><i class="fa-solid fa-robot"></i> Assistente Virtual</h4>
                 <button class="chatbot-close">×</button>
             </div>
             <div class="chatbot-messages">
                 <div style="color: #ffffff; margin-bottom: 1rem;">
-                    Olá! 👋 Posso ajudá-lo com informações sobre nossa empresa. Como posso ajudar?
+                    Olá! Posso ajudá-lo com informações sobre nossa empresa. Como posso ajudar?
                 </div>
             </div>
             <div class="chatbot-input-container">
@@ -707,24 +709,32 @@ if (!isset($_SESSION['cart'])) {
         
         // Animação dos números das estatísticas
         function animateNumbers() {
-            const statNumbers = document.querySelectorAll('.stat-number');
+        const statNumbers = document.querySelectorAll('.stat-number');
+        
+        statNumbers.forEach(stat => {
+            const originalText = stat.textContent;
+            const isSpecialFormat = originalText.includes('/'); // Verifica se é formato especial
             
-            statNumbers.forEach(stat => {
-                const target = parseInt(stat.textContent.replace(/\D/g, ''));
-                const suffix = stat.textContent.replace(/\d/g, '');
-                let current = 0;
-                const increment = target / 50;
-                
-                const timer = setInterval(() => {
-                    current += increment;
-                    if (current >= target) {
-                        current = target;
-                        clearInterval(timer);
-                    }
-                    stat.textContent = Math.floor(current) + suffix;
-                }, 30);
-            });
-        }
+            if (isSpecialFormat) {
+                // Mantém o formato original sem animação
+                return;
+            }
+            
+            const target = parseInt(originalText.replace(/\D/g, ''));
+            const suffix = originalText.replace(/\d/g, '');
+            let current = 0;
+            const increment = target / 50;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                stat.textContent = Math.floor(current) + suffix;
+            }, 30);
+        });
+    }
         
         // Observar quando as estatísticas entram na tela
         const statsSection = document.querySelector('.stats-grid');

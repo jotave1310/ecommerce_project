@@ -20,6 +20,8 @@ $produtos = obterProdutosDestaque(); // Supondo que esta função retorne produt
     <title>E-commerce Project - Loja Online</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -34,7 +36,7 @@ $produtos = obterProdutosDestaque(); // Supondo que esta função retorne produt
                         <li><a href="sobre.php">Sobre</a></li>
                         <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
-                            <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <li><a href="perfil.php">Meu Perfil</a></li>
                             <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
                                 <li><a href="admin.php">Admin</a></li>
                             <?php endif; ?>
@@ -45,7 +47,7 @@ $produtos = obterProdutosDestaque(); // Supondo que esta função retorne produt
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>
@@ -89,21 +91,21 @@ $produtos = obterProdutosDestaque(); // Supondo que esta função retorne produt
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
     <!-- Chatbot -->
     <div class="chatbot-container">
-        <button class="chatbot-toggle">💬</button>
+        <button class="chatbot-toggle"><i class="fa-solid fa-comment-nodes"></i></button>
         <div class="chatbot-window">
             <div class="chatbot-header">
-                <h4>🤖 Assistente Virtual</h4>
+                <h4><i class="fa-solid fa-robot"></i> Assistente Virtual</h4>
                 <button class="chatbot-close">×</button>
             </div>
             <div class="chatbot-messages">
                 <div style="color: #ffffff; margin-bottom: 1rem;">
-                    Olá! 👋 Sou seu assistente virtual. Como posso ajudá-lo hoje?
+                    Olá! Sou seu assistente virtual. Como posso ajudá-lo hoje?
                 </div>
             </div>
             <div class="chatbot-input-container">

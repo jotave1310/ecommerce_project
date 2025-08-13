@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             $_SESSION['usuario_email'] = $email;
             $_SESSION['usuario_tipo'] = 'admin';
             
-            header('Location: admin_new.php');
+            header('Location: admin.php');
             exit();
         } elseif ($email === 'user@teste.com' && $senha === '123456') {
             $_SESSION['usuario_id'] = 2;
@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registro'])) {
     <title>Login - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .auth-container {

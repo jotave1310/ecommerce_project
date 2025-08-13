@@ -47,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include 'header.php'; ?>
     <title>Registro - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -242,6 +243,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
+        </div>
+    </footer>
 
     <script>
         // Remover preloader

@@ -2,8 +2,8 @@
 // Configurações do banco de dados
 $host = 'localhost';
 $dbname = 'ecommerce_db';
-$username = 'ecommerce_user';
-$password = 'ecommerce_pass';
+$username = 'root';
+$password = '';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
@@ -244,7 +244,7 @@ function autenticarUsuario($email, $senha) {
 /**
  * Função para obter usuário por ID
  */
-function obterUsuarioPorId($id) {
+function obterUsuario($id) {
     global $pdo;
     
     try {
@@ -525,7 +525,7 @@ function adicionarCategoria($nome, $descricao = '') {
 /**
  * Função para buscar produtos
  */
-function buscarProdutos($termo, $categoria_id = null, $preco_min = null, $preco_max = null) {
+function buscarProdutos($termo = '', $categoria_id = null, $preco_min = null, $preco_max = null) {
     global $pdo;
     
     try {
@@ -533,23 +533,38 @@ function buscarProdutos($termo, $categoria_id = null, $preco_min = null, $preco_
             SELECT p.*, c.nome as categoria_nome 
             FROM produtos p 
             LEFT JOIN categorias c ON p.categoria_id = c.id 
-            WHERE p.ativo = 1 AND (p.nome LIKE ? OR p.descricao_curta LIKE ? OR p.descricao_longa LIKE ?)
+            WHERE p.ativo = 1
         ";
-        $params = ["%$termo%", "%$termo%", "%$termo%"];
         
-        if ($categoria_id) {
-            $sql .= " AND p.categoria_id = ?";
+        $conditions = [];
+        $params = [];
+        
+        // Adicionar condições conforme os parâmetros
+        if (!empty($termo)) {
+            $conditions[] = "(p.nome LIKE ? OR p.descricao_curta LIKE ? OR p.descricao_longa LIKE ?)";
+            $params[] = "%$termo%";
+            $params[] = "%$termo%";
+            $params[] = "%$termo%";
+        }
+        
+        if (!empty($categoria_id)) {
+            $conditions[] = "p.categoria_id = ?";
             $params[] = $categoria_id;
         }
         
-        if ($preco_min !== null) {
-            $sql .= " AND p.preco >= ?";
+        if ($preco_min !== null && $preco_min >= 0) {
+            $conditions[] = "p.preco >= ?";
             $params[] = $preco_min;
         }
         
-        if ($preco_max !== null) {
-            $sql .= " AND p.preco <= ?";
+        if ($preco_max !== null && $preco_max > 0) {
+            $conditions[] = "p.preco <= ?";
             $params[] = $preco_max;
+        }
+        
+        // Combinar condições
+        if (!empty($conditions)) {
+            $sql .= " AND " . implode(" AND ", $conditions);
         }
         
         $sql .= " ORDER BY p.nome";
@@ -561,6 +576,182 @@ function buscarProdutos($termo, $categoria_id = null, $preco_min = null, $preco_
     } catch (PDOException $e) {
         error_log("Erro ao buscar produtos: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Obter carrinho do usuário (cria se não existir)
+ */
+function obterCarrinhoUsuario($usuarioId) {
+    global $pdo;
+    
+    try {
+        // Verificar se já existe carrinho
+        $stmt = $pdo->prepare("SELECT id FROM carrinhos WHERE usuario_id = ?");
+        $stmt->execute([$usuarioId]);
+        $carrinho = $stmt->fetch();
+        
+        if (!$carrinho) {
+            // Criar novo carrinho
+            $stmt = $pdo->prepare("INSERT INTO carrinhos (usuario_id) VALUES (?)");
+            $stmt->execute([$usuarioId]);
+            return $pdo->lastInsertId();
+        }
+        
+        return $carrinho['id'];
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter carrinho: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Adicionar item ao carrinho
+ */
+function adicionarAoCarrinho($carrinhoId, $produtoId, $quantidade = 1) {
+    global $pdo;
+    
+    try {
+        // Verificar se o item já está no carrinho
+        $stmt = $pdo->prepare("SELECT quantidade FROM carrinho_itens 
+                              WHERE carrinho_id = ? AND produto_id = ?");
+        $stmt->execute([$carrinhoId, $produtoId]);
+        $item = $stmt->fetch();
+        
+        if ($item) {
+            // Atualizar quantidade
+            $novaQuantidade = $item['quantidade'] + $quantidade;
+            $stmt = $pdo->prepare("UPDATE carrinho_itens SET quantidade = ? 
+                                  WHERE carrinho_id = ? AND produto_id = ?");
+            $stmt->execute([$novaQuantidade, $carrinhoId, $produtoId]);
+        } else {
+            // Adicionar novo item
+            $stmt = $pdo->prepare("INSERT INTO carrinho_itens (carrinho_id, produto_id, quantidade) 
+                                  VALUES (?, ?, ?)");
+            $stmt->execute([$carrinhoId, $produtoId, $quantidade]);
+        }
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao adicionar ao carrinho: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Remover item do carrinho
+ */
+function removerDoCarrinho($carrinhoId, $produtoId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("DELETE FROM carrinho_itens 
+                              WHERE carrinho_id = ? AND produto_id = ?");
+        return $stmt->execute([$carrinhoId, $produtoId]);
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao remover do carrinho: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Atualizar quantidade no carrinho
+ */
+function atualizarQuantidadeCarrinho($carrinhoId, $produtoId, $quantidade) {
+    global $pdo;
+    
+    try {
+        if ($quantidade <= 0) {
+            return removerDoCarrinho($carrinhoId, $produtoId);
+        }
+        
+        $stmt = $pdo->prepare("UPDATE carrinho_itens SET quantidade = ? 
+                              WHERE carrinho_id = ? AND produto_id = ?");
+        return $stmt->execute([$quantidade, $carrinhoId, $produtoId]);
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao atualizar carrinho: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Limpar carrinho
+ */
+function limparCarrinho($carrinhoId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("DELETE FROM carrinho_itens WHERE carrinho_id = ?");
+        return $stmt->execute([$carrinhoId]);
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao limpar carrinho: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Obter itens do carrinho
+ */
+function obterItensCarrinho($carrinhoId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT ci.produto_id, ci.quantidade, p.nome, p.preco, p.imagem_url, c.nome as categoria 
+            FROM carrinho_itens ci
+            JOIN produtos p ON ci.produto_id = p.id
+            LEFT JOIN categorias c ON p.categoria_id = c.id
+            WHERE ci.carrinho_id = ?
+        ");
+        $stmt->execute([$carrinhoId]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao obter itens do carrinho: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Calcular total do carrinho
+ */
+function calcularTotalCarrinho($carrinhoId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT SUM(p.preco * ci.quantidade) as total
+            FROM carrinho_itens ci
+            JOIN produtos p ON ci.produto_id = p.id
+            WHERE ci.carrinho_id = ?
+        ");
+        $stmt->execute([$carrinhoId]);
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Erro ao calcular total do carrinho: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obter usuário por ID
+ */
+function obterUsuarioPorId($id) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erro ao obter usuário: " . $e->getMessage());
+        return false;
     }
 }
 ?>

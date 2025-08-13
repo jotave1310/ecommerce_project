@@ -59,6 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
     <title>Contato - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .contact-container {
@@ -201,6 +203,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
             color: var(--primary-color);
         }
         
+        .form-select option{
+            color: black;
+        }
+
         .form-input, .form-textarea, .form-select {
             padding: var(--spacing-md);
             background: rgba(255, 255, 255, 0.08);
@@ -412,7 +418,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
             font-size: 1.2rem;
             transition: all var(--transition-normal);
         }
+
+        .social-link[title="Facebook"]:hover {
+            background-color: #1877F2;
+            color: white;
+        }
         
+        .social-link[title="Instagram"]:hover {
+            background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+            color: white;
+        }
+
+        .social-link[title="Twitter"]:hover {
+            background-color: #000000; /* Preto para o X */
+            color: white;
+        }
+
+        .social-link[title="LinkedIn"]:hover {
+            background-color: #0A66C2;
+            color: white;
+        }
+
         .social-link:hover {
             background: var(--primary-color);
             border-color: var(--primary-color);
@@ -466,11 +492,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                 <nav>
                     <ul>
                         <li><a href="index.php">Início</a></li>
-                        <li><a href="produtos_new.php">Produtos</a></li>
-                        <li><a href="sobre_new.php">Sobre</a></li>
-                        <li><a href="contato_new.php">Contato</a></li>
+                        <li><a href="produtos.php">Produtos</a></li>
+                        <li><a href="sobre.php">Sobre</a></li>
+                        <li><a href="contato.php">Contato</a></li>
                         <?php if (isset($_SESSION['usuario_id'])): ?>
-                            <li><a href="perfil.php">Olá, <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>!</a></li>
+                            <li><a href="perfil.php">Meu Perfil</a></li>
                             <?php if ($_SESSION['usuario_tipo'] == 'admin'): ?>
                                 <li><a href="admin.php">Admin</a></li>
                             <?php endif; ?>
@@ -481,7 +507,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>
@@ -513,14 +539,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
         <div class="contact-content">
             <div class="contact-form-section">
                 <h2 class="form-title">
-                    📧 Envie sua Mensagem
+                    <i class="fa-solid fa-envelope"></i> Envie sua Mensagem
                 </h2>
                 
                 <form method="POST" id="contactForm">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nome" class="form-label">
-                                👤 Nome <span class="required">*</span>
+                                <i class="fa-solid fa-user"></i> Nome <span class="required">*</span>
                             </label>
                             <input type="text" id="nome" name="nome" class="form-input" 
                                    placeholder="Seu nome completo" required
@@ -529,7 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                         
                         <div class="form-group">
                             <label for="email" class="form-label">
-                                📧 Email <span class="required">*</span>
+                                <i class="fa-solid fa-envelope"></i> Email <span class="required">*</span>
                             </label>
                             <input type="email" id="email" name="email" class="form-input" 
                                    placeholder="seu@email.com" required
@@ -540,7 +566,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="telefone" class="form-label">
-                                📞 Telefone
+                                <i class="fa-solid fa-phone"></i> Telefone
                             </label>
                             <input type="tel" id="telefone" name="telefone" class="form-input" 
                                    placeholder="(11) 99999-9999"
@@ -549,9 +575,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                         
                         <div class="form-group">
                             <label for="assunto" class="form-label">
-                                📋 Assunto <span class="required">*</span>
+                                <i class="fa-solid fa-clipboard-list"></i> Assunto <span class="required">*</span>
                             </label>
-                            <select id="assunto" name="assunto" class="form-select" required>
+                            <select id="assunto" name="assunto" class="form-select"  required>
                                 <option value="">Selecione um assunto</option>
                                 <option value="Dúvida sobre produto" <?php echo (isset($assunto) && $assunto === 'Dúvida sobre produto') ? 'selected' : ''; ?>>Dúvida sobre produto</option>
                                 <option value="Suporte técnico" <?php echo (isset($assunto) && $assunto === 'Suporte técnico') ? 'selected' : ''; ?>>Suporte técnico</option>
@@ -565,14 +591,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
 
                     <div class="form-group full-width">
                         <label for="mensagem" class="form-label">
-                            💬 Mensagem <span class="required">*</span>
+                            <i class="fa-solid fa-message"></i> Mensagem <span class="required">*</span>
                         </label>
                         <textarea id="mensagem" name="mensagem" class="form-textarea" 
                                   placeholder="Descreva sua dúvida, sugestão ou comentário..." required><?php echo htmlspecialchars($mensagem ?? ''); ?></textarea>
                     </div>
 
                     <button type="submit" name="enviar_mensagem" class="btn-submit">
-                        <span>📧</span>
+                        <span><i class="fa-solid fa-envelope"></i></span>
                         Enviar Mensagem
                     </button>
                 </form>
@@ -581,11 +607,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
             <div class="contact-info-section">
                 <div class="contact-info-card">
                     <h3 class="info-title">
-                        📞 Informações de Contato
+                        <i class="fa-solid fa-phone"></i> Informações de Contato
                     </h3>
                     
                     <div class="contact-item">
-                        <span class="contact-icon">📧</span>
+                        <span class="contact-icon"><i class="fa-solid fa-envelope"></i></span>
                         <div class="contact-details">
                             <div class="contact-label">Email</div>
                             <div class="contact-value">contato@ecommerceproject.com<br>suporte@ecommerceproject.com</div>
@@ -593,7 +619,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                     </div>
                     
                     <div class="contact-item">
-                        <span class="contact-icon">📞</span>
+                        <span class="contact-icon"><i class="fa-solid fa-phone"></i></span>
                         <div class="contact-details">
                             <div class="contact-label">Telefone</div>
                             <div class="contact-value">(11) 9999-9999<br>WhatsApp: (11) 8888-8888</div>
@@ -601,7 +627,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                     </div>
                     
                     <div class="contact-item">
-                        <span class="contact-icon">📍</span>
+                        <span class="contact-icon"><i class="fa-solid fa-location-dot"></i></span>
                         <div class="contact-details">
                             <div class="contact-label">Endereço</div>
                             <div class="contact-value">Av. Paulista, 1000<br>São Paulo, SP - 01310-100<br>Brasil</div>
@@ -609,16 +635,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
                     </div>
                     
                     <div class="social-links">
-                        <a href="#" class="social-link" title="Facebook">📘</a>
-                        <a href="#" class="social-link" title="Instagram">📷</a>
-                        <a href="#" class="social-link" title="Twitter">🐦</a>
-                        <a href="#" class="social-link" title="LinkedIn">💼</a>
+                        <a href="#" class="social-link" title="Facebook" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link" title="Instagram" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" class="social-link" title="Twitter" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
+                        <a href="#" class="social-link" title="LinkedIn" target="_blank"><i class="fa-brands fa-linkedin"></i></a>
                     </div>
                 </div>
 
                 <div class="contact-info-card">
                     <div class="hours-card">
-                        <h3 class="hours-title">🕒 Horário de Atendimento</h3>
+                        <h3 class="hours-title"><i class="fa-solid fa-clock"></i> Horário de Atendimento</h3>
                         <div class="hours-list">
                             <div class="hours-item">
                                 <span class="hours-day">Segunda a Sexta</span>
@@ -643,9 +669,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
         </div>
 
         <div class="map-section">
-            <h3 class="info-title">🗺️ Nossa Localização</h3>
+            <h3 class="info-title"><i class="fa-solid fa-map"></i> Nossa Localização</h3>
             <div class="map-placeholder">
-                📍 Mapa interativo em breve
+                <i class="fa-solid fa-location-dot"></i> Mapa interativo em breve
             </div>
             <p style="color: var(--text-muted); text-align: center;">
                 Estamos localizados no coração de São Paulo, com fácil acesso por transporte público e estacionamento disponível.
@@ -656,21 +682,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensagem'])) {
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
     <!-- Chatbot -->
     <div class="chatbot-container">
-        <button class="chatbot-toggle">💬</button>
+        <button class="chatbot-toggle"><i class="fa-solid fa-comment-nodes"></i></button>
         <div class="chatbot-window">
             <div class="chatbot-header">
-                <h4>🤖 Assistente Virtual</h4>
+                <h4><i class="fa-solid fa-robot"></i> Assistente Virtual</h4>
                 <button class="chatbot-close">×</button>
             </div>
             <div class="chatbot-messages">
                 <div style="color: #ffffff; margin-bottom: 1rem;">
-                    Olá! 👋 Posso ajudá-lo com informações de contato ou dúvidas. Como posso ajudar?
+                    Olá! Posso ajudá-lo com informações de contato ou dúvidas. Como posso ajudar?
                 </div>
             </div>
             <div class="chatbot-input-container">

@@ -1,40 +1,49 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'db_connect.php';
 
-// Inicializar carrinho se não existir
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = array();
+// Verificar se está logado
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: login.php');
+    exit();
 }
 
-// Processar remoção de item do carrinho
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remover_item'])) {
-    $produtoId = (int)$_POST['produto_id'];
-    unset($_SESSION['cart'][$produtoId]);
-    $mensagem = "Item removido do carrinho!";
-}
+$usuarioId = $_SESSION['usuario_id'];
+$carrinhoId = obterCarrinhoUsuario($usuarioId);
 
-// Processar atualização de quantidade
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['atualizar_quantidade'])) {
-    $produtoId = (int)$_POST['produto_id'];
-    $novaQuantidade = (int)$_POST['quantidade'];
-    
-    if ($novaQuantidade > 0) {
-        $_SESSION['cart'][$produtoId] = $novaQuantidade;
-        $mensagem = "Quantidade atualizada!";
-    } else {
-        unset($_SESSION['cart'][$produtoId]);
-        $mensagem = "Item removido do carrinho!";
+// Processar ações no carrinho
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['remover_item'])) {
+        $produtoId = (int)$_POST['produto_id'];
+        if (removerDoCarrinho($carrinhoId, $produtoId)) {
+            $mensagem = "Item removido do carrinho!";
+        } else {
+            $erro = "Erro ao remover item do carrinho.";
+        }
+    } 
+    elseif (isset($_POST['atualizar_quantidade'])) {
+        $produtoId = (int)$_POST['produto_id'];
+        $novaQuantidade = (int)$_POST['quantidade'];
+        
+        if (atualizarQuantidadeCarrinho($carrinhoId, $produtoId, $novaQuantidade)) {
+            $mensagem = "Quantidade atualizada!";
+        } else {
+            $erro = "Erro ao atualizar quantidade.";
+        }
+    } 
+    elseif (isset($_POST['limpar_carrinho'])) {
+        if (limparCarrinho($carrinhoId)) {
+            $mensagem = "Carrinho limpo!";
+        } else {
+            $erro = "Erro ao limpar carrinho.";
+        }
     }
 }
 
-// Processar limpeza do carrinho
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['limpar_carrinho'])) {
-    $_SESSION['cart'] = array();
-    $mensagem = "Carrinho limpo!";
-}
-
-$total = calcularTotalCarrinho($_SESSION['cart']);
+// Obter itens do carrinho e calcular total
+$itensCarrinho = obterItensCarrinho($carrinhoId);
+$total = calcularTotalCarrinho($carrinhoId);
 ?>
 
 <!DOCTYPE html>
@@ -43,43 +52,123 @@ $total = calcularTotalCarrinho($_SESSION['cart']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho de Compras - E-commerce Project</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+<style>
+    /* Carrinho de Compras */
+.cart-table {
+    background-color: white;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.cart-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-table th, .cart-table td {
+    color: black;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid white;
+}
+
+.cart-table th {
+    background-color: black;
+    font-weight: 600;
+}
+
+.cart-product-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cart-product-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: var(--border-radius-sm);
+    background-color: black;
+}
+
+.cart-product-category {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.cart-quantity-input {
+    width: 60px;
+    padding: 0.5rem;
+    border: 1px solid black;
+    border-radius: var(--border-radius-sm);
+    text-align: center;
+}
+
+.cart-summary {
+    background-color: black;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.cart-total {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.cart-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+</style>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">E-commerce Project</div>
-                <nav>
-                    <ul>
-                        <li><a href="index.php">Início</a></li>
-                        <li><a href="produtos.php">Produtos</a></li>
-                        <li><a href="sobre.php">Sobre</a></li>
-                        <li><a href="contato.php">Contato</a></li>
-                    </ul>
-                </nav>
-                <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo count($_SESSION['cart']); ?>)
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php include 'header.php'; ?>
 
     <main>
         <div class="container">
-            <h1 style="color: #2c3e50; margin-bottom: 2rem;">Carrinho de Compras</h1>
+            <div class="breadcrumb">
+                <a href="index.php" class="breadcrumb-item">Início</a>
+                <span class="breadcrumb-separator">›</span>
+                <span class="breadcrumb-item active">Carrinho</span>
+            </div>
 
+            <h1>Carrinho de Compras</h1>
+            
             <?php if (isset($mensagem)): ?>
-                <div style="background-color: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 2rem;">
+                <div class="alert alert-success">
                     <?php echo htmlspecialchars($mensagem); ?>
                 </div>
             <?php endif; ?>
-
-            <?php if (empty($_SESSION['cart'])): ?>
-                <div style="background-color: white; padding: 3rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
-                    <h2>Seu carrinho está vazio</h2>
-                    <p style="margin: 1rem 0;">Adicione alguns produtos para continuar comprando!</p>
-                    <a href="index.php" class="btn">Continuar Comprando</a>
+            
+            <?php if (isset($erro)): ?>
+                <div class="alert alert-error">
+                    <?php echo htmlspecialchars($erro); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (empty($itensCarrinho)): ?>
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fa-solid fa-cart-arrow-down"></i></div>
+                    <h4 class="empty-title">Seu carrinho está vazio</h4>
+                    <p class="empty-description">Adicione alguns produtos para continuar comprando!</p>
+                    <a href="produtos.php" class="btn btn-primary">Continuar Comprando</a>
                 </div>
             <?php else: ?>
                 <div class="cart-table">
@@ -94,56 +183,59 @@ $total = calcularTotalCarrinho($_SESSION['cart']);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($_SESSION['cart'] as $produtoId => $quantidade): ?>
-                                <?php $produto = obterProduto($produtoId); ?>
-                                <?php if ($produto): ?>
-                                    <tr>
-                                        <td>
-                                            <strong><?php echo htmlspecialchars($produto['nome']); ?></strong><br>
-                                            <small><?php echo htmlspecialchars($produto['categoria']); ?></small>
-                                        </td>
-                                        <td><?php echo formatarPreco($produto['preco']); ?></td>
-                                        <td>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="produto_id" value="<?php echo $produtoId; ?>">
-                                                <input type="number" name="quantidade" value="<?php echo $quantidade; ?>" 
-                                                       min="0" max="10" style="width: 60px; padding: 0.3rem;">
-                                                <button type="submit" name="atualizar_quantidade" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                                                    Atualizar
-                                                </button>
-                                            </form>
-                                        </td>
-                                        <td><?php echo formatarPreco($produto['preco'] * $quantidade); ?></td>
-                                        <td>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="produto_id" value="<?php echo $produtoId; ?>">
-                                                <button type="submit" name="remover_item" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                                                    Remover
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
+                            <?php foreach ($itensCarrinho as $item): ?>
+                                <tr>
+                                    <td>
+                                        <div class="cart-product-info">
+                                            <?php if (!empty($item['imagem_url'])): ?>
+                                                <img src="<?php echo htmlspecialchars($item['imagem_url']); ?>" alt="<?php echo htmlspecialchars($item['nome']); ?>" class="cart-product-image">
+                                            <?php endif; ?>
+                                            <div>
+                                                <strong><?php echo htmlspecialchars($item['nome']); ?></strong>
+                                                <div class="cart-product-category"><?php echo htmlspecialchars($item['categoria']); ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>R$ <?php echo number_format($item['preco'], 2, ',', '.'); ?></td>
+                                    <td>
+                                        <form method="POST">
+                                            <input type="hidden" name="produto_id" value="<?php echo $item['produto_id']; ?>">
+                                            <input type="number" name="quantidade" value="<?php echo $item['quantidade']; ?>" min="1" max="10" class="cart-quantity-input">
+                                            <button type="submit" name="atualizar_quantidade" class="btn btn-sm">
+                                                Atualizar
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td>R$ <?php echo number_format($item['preco'] * $item['quantidade'], 2, ',', '.'); ?></td>
+                                    <td>
+                                        <form method="POST">
+                                            <input type="hidden" name="produto_id" value="<?php echo $item['produto_id']; ?>">
+                                            <button type="submit" name="remover_item" class="btn btn-danger btn-sm">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="cart-total">
-                    <div class="total-price">
-                        Total: <?php echo formatarPreco($total); ?>
+                <div class="cart-summary">
+                    <div class="cart-total">
+                        <strong>Total:</strong> R$ <?php echo number_format($total, 2, ',', '.'); ?>
                     </div>
                     
-                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <form method="POST" style="display: inline;">
+                    <div class="cart-actions">
+                        <form method="POST">
                             <button type="submit" name="limpar_carrinho" class="btn btn-danger">
                                 Limpar Carrinho
                             </button>
                         </form>
                         
-                        <a href="index.php" class="btn">Continuar Comprando</a>
+                        <a href="produtos.php" class="btn">Continuar Comprando</a>
                         
-                        <a href="checkout.php" class="btn btn-success">Finalizar Compra</a>
+                        <a href="checkout.php" class="btn btn-primary">Finalizar Compra</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -152,9 +244,9 @@ $total = calcularTotalCarrinho($_SESSION['cart']);
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados. | Dexo</p>
+            <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 </body>
 </html>
-

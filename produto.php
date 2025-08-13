@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) 
     <title><?php echo htmlspecialchars($produto['nome']); ?> - E-commerce Project</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="components.css">
+    <?php include 'header.php'; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .product-detail-container {
@@ -444,7 +445,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) 
                     </ul>
                 </nav>
                 <a href="carrinho.php" class="cart-icon">
-                    🛒 Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
+                    <i class="fa-solid fa-cart-shopping"></i> Carrinho (<?php echo array_sum($_SESSION['cart']); ?>)
                 </a>
             </div>
         </div>
@@ -549,11 +550,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) 
                     <div class="form-group">
                         <label for="nota" class="form-label">Sua Nota:</label>
                         <div class="rating-input">
-                            <input type="radio" id="star5" name="nota" value="5"><label for="star5">★</label>
-                            <input type="radio" id="star4" name="nota" value="4"><label for="star4">★</label>
+                            <input type="radio" id="star1" name="nota" value="5"><label for="star1">★</label>
+                            <input type="radio" id="star2" name="nota" value="4"><label for="star2">★</label>
                             <input type="radio" id="star3" name="nota" value="3"><label for="star3">★</label>
-                            <input type="radio" id="star2" name="nota" value="2"><label for="star2">★</label>
-                            <input type="radio" id="star1" name="nota" value="1"><label for="star1">★</label>
+                            <input type="radio" id="star4" name="nota" value="2"><label for="star4">★</label>
+                            <input type="radio" id="star5" name="nota" value="1"><label for="star5">★</label>
                         </div>
                     </div>
                     <div class="form-group">
@@ -617,7 +618,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) 
     <footer>
         <div class="container">
             <p>&copy; 2025 E-commerce Project. Todos os direitos reservados.</p>
-            <p>Desenvolvido por <a href="#" class="dexo-credit">Dexo</a></p>
+            <p>Desenvolvido por <a href="https://dexo-mu.vercel.app/" class="dexo-credit">Dexo</a></p>
         </div>
     </footer>
 
@@ -663,14 +664,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_avaliacao'])) 
         }
 
         function addToCart(productId) {
-            const quantity = document.getElementById('quantity').value;
-            // Aqui você faria uma requisição AJAX para adicionar ao carrinho
-            alert(`Produto ${productId} adicionado ao carrinho com quantidade ${quantity}`);
-            // Atualizar o contador do carrinho no header (simulado)
-            const cartIcon = document.querySelector('.cart-icon');
-            let currentCartCount = parseInt(cartIcon.textContent.match(/\((\d+)\)/)[1]);
-            cartIcon.textContent = `🛒 Carrinho (${currentCartCount + parseInt(quantity)})`;
-        }
+        const quantity = document.getElementById('quantity').value;
+        
+        // Fazer requisição AJAX para adicionar ao carrinho
+        fetch('adicionar_carrinho.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `produto_id=${productId}&quantidade=${quantity}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Produto adicionado ao carrinho!`);
+                // Atualizar o contador do carrinho no header
+                document.querySelector('.cart-icon').innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Carrinho (${data.total_itens})`;
+            } else {
+                alert(`Erro: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+        });
+    }
 
         // Animação de entrada dos elementos
         const observer = new IntersectionObserver((entries) => {
